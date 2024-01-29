@@ -1,7 +1,12 @@
 from flask import Flask, request, jsonify, render_template
 from instagrapi import Client
+import os
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 @app.route('/')
@@ -19,11 +24,13 @@ def ig_login(username, password):
 def post_image():
     username = request.form['username']
     password = request.form['password']
-    photo_path = request.form['photo_path']
     caption = request.form['caption']
+    photo = request.files["photo"]
 
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], photo.filename)
+    photo.save(file_path)
     client = ig_login(username, password)
-    client.photo_upload(photo_path, caption)
+    client.photo_upload(file_path, caption)
 
     return "Image Posted!"
 
