@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Actions</title>
+</head>
+<body>
+    <h1>Instagram Bot</h1>
+
+    <h2>Post an Image</h2>
+    <form action="/post" method="post">
+        Username: <label>
+        <input type="text" name="username" required>
+    </label><br>
+        Password: <label>
+        <input type="password" name="password" required>
+    </label><br>
+        Photo Path: <label>
+        <input type="text" name="photo_path" required>
+    </label><br>
+        Caption: <label>
+        <textarea name="caption" required></textarea>
+    </label><br>
+        <input type="submit" value="Post Image">
+    </form>
+
+    <h2>Like a Post</h2>
+    <form action="/like" method="post">
+        Username: <label>
+        <input type="text" name="username" required>
+    </label><br>
+        Password: <label>
+        <input type="password" name="password" required>
+    </label><br>
+        Media ID: <label>
+        <input type="text" name="media_id" required>
+    </label><br>
+        <input type="submit" value="Like Post">
+    </form>
+
+    <h2>Comment on a Post</h2>
+    <form action="/comment" method="post">
+        Username: <label>
+        <input type="text" name="username" required>
+    </label><br>
+        Password: <label>
+        <input type="password" name="password" required>
+    </label><br>
+        Media ID: <label>
+        <input type="text" name="media_id" required>
+    </label><br>
+        Comment: <label>
+        <textarea name="comment" required></textarea>
+    </label><br>
+        <input type="submit" value="Comment">
+    </form>
+</body>
+</html>
