@@ -10,15 +10,15 @@
     <h1>Instagram Bot</h1>
 
     <h2>Post an Image</h2>
-    <form action="/post" method="post">
+    <form action="/post" method="post" enctype="multipart/form-data">
         Username: <label>
         <input type="text" name="username" required>
     </label><br>
         Password: <label>
         <input type="password" name="password" required>
     </label><br>
-        Photo Path: <label>
-        <input type="text" name="photo_path" required>
+        Photo: <label>
+        <input type="file" name="photo" accept="image/*" required>
     </label><br>
         Caption: <label>
         <textarea name="caption" required></textarea>
