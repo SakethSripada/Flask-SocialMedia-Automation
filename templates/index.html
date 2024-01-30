@@ -22,7 +22,7 @@
 
     <div class = main-content>
 
-    <h1>Instagram Bot</h1>
+    <h1>Instagram Automation</h1>
 
     <h2>Post an Image</h2>
     <form action="/post" method="post" enctype="multipart/form-data">
@@ -38,6 +38,9 @@
         Caption: <label>
         <textarea name="caption" required></textarea>
     </label><br>
+        Schedule Time: <label>
+    <input type="datetime-local" name="schedule_time">
+    </label><br>
         <input type="submit" value="Post Image">
     </form>
 
@@ -51,6 +54,9 @@
     </label><br>
         Media ID: <label>
         <input type="text" name="media_id" required>
+    </label><br>
+        Schedule Time: <label>
+    <input type="datetime-local" name="schedule_time">
     </label><br>
         <input type="submit" value="Like Post">
     </form>
