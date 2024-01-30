@@ -39,6 +39,16 @@ def exec_post(username, password, file_path, caption):
     client.photo_upload(file_path, caption)
 
 
+def exec_like(username, password, media_id):
+    client = ig_login(username, password)
+    client.media_like(media_id)
+
+
+def exec_comment(username, password, media_id, comment):
+    client = ig_login(username, password)
+    client.photo_upload(file_path, caption)
+
+
 @app.route("/post", methods=["POST"])
 def post_image():
     username = request.form['username']
@@ -69,11 +79,20 @@ def like_post():
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
+    scheduled_time = request.form.get(schedule_time_like)
 
-    client = ig_login(username, password)
-    client.media_like(media_id)
-
-    return "Post Liked!"
+    if scheduled_time:
+        scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        like_delay = (scheduled_time - datetime.datetime.now()).total_seconds()
+        if like_delay > 0:
+            sched_item(like_delay, exec_like, username, password, media_id)
+            return "Successfully Scheduled."
+        else:
+            exec_like(username, password, media_id)
+            return "Scheduled time has passed. Liking Post Now."
+    else:
+        exec_like(username, password, media_id)
+        return "Successfully Liked"
 
 
 @app.route("/comment", methods=["POST"])
