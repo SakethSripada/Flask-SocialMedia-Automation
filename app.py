@@ -46,7 +46,7 @@ def exec_like(username, password, media_id):
 
 def exec_comment(username, password, media_id, comment):
     client = ig_login(username, password)
-    client.photo_upload(file_path, caption)
+    client.media_comment(media_id, comment)
 
 
 @app.route("/post", methods=["POST"])
@@ -101,11 +101,20 @@ def comment_ig():
     password = request.form['password']
     media_id = request.form['media_id']
     comment = request.form['comment']
+    scheduled_time = request.form.get(schedule_time_com)
 
-    client = ig_login(username, password)
-    client.media_comment(media_id, comment)
-
-    return "Commented!"
+    if scheduled_time:
+        scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        comment_delay = (scheduled_time - datetime.datetime.now()).total_seconds()
+        if comment_delay > 0:
+            sched_item(comment_delay, exec_comment, username, password, media_id, comment)
+            return "Successfully Scheduled."
+        else:
+            exec_comment(username, password, media_id, comment)
+            return "Scheduled time has passed. Commenting on post now."
+    else:
+        exec_comment(username, password, media_id, comment)
+        return "Successfully Commented."
 
 
 if __name__ == '__main__':
