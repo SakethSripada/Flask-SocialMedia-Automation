@@ -32,9 +32,13 @@ form {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-width: 500px;
     margin: 20px auto;
-    border: 2px solid dodgerblue; /* Solid border around the form */
+    border: 2px solid dodgerblue;
+    transition: transform 0.5s ease-in-out;
 }
 
+form:hover{
+    transform: scale(1.05);
+}
 label {
     display: block;
     margin-bottom: 10px;
@@ -42,7 +46,7 @@ label {
 
 .submit-btn:hover {
     transform: scale(1.1);
-    transition: transform 0.2s ease-in-out; /* Add for a smoother transition */
+    transition: transform 0.2s ease-in-out;
 }
 
 input[type="text"],

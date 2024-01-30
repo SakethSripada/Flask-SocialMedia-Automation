@@ -1,10 +1,18 @@
 from flask import Flask, request, jsonify, render_template
 from instagrapi import Client
+from werkzeug.utils import secure_filename
+import uuid
 import os
 import datetime
 import sched
 import time
 import threading
+import logging
+
+logging.basicConfig(filename='app.log',
+                    filemode='a',
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
 
 scheduler = sched.scheduler(time.time, time.sleep)
 
@@ -35,18 +43,30 @@ def sched_item(delay, function, *args):
 
 
 def exec_post(username, password, file_path, caption):
-    client = ig_login(username, password)
-    client.photo_upload(file_path, caption)
+    try:
+        client = ig_login(username, password)
+        client.photo_upload(file_path, caption)
+    except EnvironmentError:
+        print("Error. Image did not post")
+        logging.error("Image post failed.")
 
 
 def exec_like(username, password, media_id):
-    client = ig_login(username, password)
-    client.media_like(media_id)
+    try:
+        client = ig_login(username, password)
+        client.media_like(media_id)
+    except EnvironmentError:
+        print("Error. Post was not liked.")
+        logging.error("Like post failed.")
 
 
 def exec_comment(username, password, media_id, comment):
-    client = ig_login(username, password)
-    client.media_comment(media_id, comment)
+    try:
+        client = ig_login(username, password)
+        client.media_comment(media_id, comment)
+    except EnvironmentError:
+        print("Error. Post was not liked")
+        logging.error("Comment on post failed.")
 
 
 @app.route("/post", methods=["POST"])
@@ -56,8 +76,9 @@ def post_image():
     caption = request.form['caption']
     photo = request.files["photo"]
     scheduled_time = request.form.get("schedule_time")
+    unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
 
-    file_path = os.path.join(app.config["UPLOAD_FOLDER"], photo.filename)
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
     photo.save(file_path)
 
     if scheduled_time:
@@ -79,7 +100,7 @@ def like_post():
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
-    scheduled_time = request.form.get(schedule_time_like)
+    scheduled_time = request.form.get("schedule_time_like")
 
     if scheduled_time:
         scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
@@ -101,7 +122,7 @@ def comment_ig():
     password = request.form['password']
     media_id = request.form['media_id']
     comment = request.form['comment']
-    scheduled_time = request.form.get(schedule_time_com)
+    scheduled_time = request.form.get("schedule_time_com")
 
     if scheduled_time:
         scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
