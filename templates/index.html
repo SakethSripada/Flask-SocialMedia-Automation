@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script async src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Social Media Automation</title>
 </head>
 <body>
@@ -21,9 +22,10 @@
         </div>
     </nav>
 
+    <div class="content-container">
     <div class = main-content>
-
     <h1>Instagram Automation</h1>
+    <button id="view-schedule-btn">View Scheduled Posts</button>
 
     <h2>Post an Image</h2>
     <form action="/post" method="post" enctype="multipart/form-data">
@@ -51,7 +53,7 @@
         <input type="text" name="username" required>
     </label><br>
         Password: <label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" id="pass2" required>
     </label><br>
         Media ID: <label>
         <input type="text" name="media_id" required>
@@ -68,7 +70,7 @@
         <input type="text" name="username" required>
     </label><br>
         Password: <label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" id = "pass3" required>
     </label><br>
         Media ID: <label>
         <input type="text" name="media_id" required>
@@ -81,7 +83,7 @@
     </label><br>
         <input type="submit" value="Comment" class = "submit-btn">
     </form>
-
+    </div>
     </div>
 </body>
 </html>
