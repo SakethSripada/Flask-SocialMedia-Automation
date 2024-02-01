@@ -14,7 +14,7 @@ import time
 import threading
 import logging
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
 db = SQLAlchemy(app)
@@ -66,7 +66,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
 
 @app.route("/register", methods=["GET", "POST"])
