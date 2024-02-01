@@ -1,6 +1,11 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, flash, render_template, redirect, url_for, session
 from instagrapi import Client
 from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 import uuid
 import os
 import datetime
@@ -9,14 +14,50 @@ import time
 import threading
 import logging
 
+app = Flask(__name__)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+db = SQLAlchemy(app)
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
+
+    def set_pass(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_pass(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+app.secret_key = 'SECRET6272X'
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
+
+
+class RegisterForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired(), Length(min=2, max=20)])
+    password = PasswordField("Password", validators=[DataRequired()])
+    confirm_password = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password")])
+    submit = SubmitField("Sign Up")
+
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError("Username Taken. Please choose another one.")
+
+
 logging.basicConfig(filename='app.log',
                     filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 scheduler = sched.scheduler(time.time, time.sleep)
-
-app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -26,6 +67,39 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route('/')
 def home():
     return render_template('index.html')
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        user = User(username=form.username.data, password_hash=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template("register.html", title="Register", form=form)
+
+
+class LoginForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired(), Length(min=2, max=20)])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("login")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if "user_id" in session:
+        return redirect(url_for("home"))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.check_pass(form.password.data):
+            session["user_id"] = user.id
+            return redirect(url_for("home"))
+        else:
+            flash("Login Failed. Check username and password", "danger")
+    return render_template("login.html", title="Login", form=form)
 
 
 def ig_login(username, password):
