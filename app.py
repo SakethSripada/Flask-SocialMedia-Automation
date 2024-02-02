@@ -102,6 +102,13 @@ def login():
     return render_template("login.html", title="Login", form=form)
 
 
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    flash("Successfully Logged Out.", "info")
+    return redirect(url_for("login"))
+
+
 def ig_login(username, password):
     client = Client()
     client.login(username, password)
