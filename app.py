@@ -16,7 +16,7 @@ import logging
 
 app = Flask(__name__, template_folder="templates")
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db?check_same_thread=False"
 db = SQLAlchemy(app)
 
 
@@ -211,6 +211,5 @@ def comment_ig():
         exec_comment(username, password, media_id, comment)
         return "Successfully Commented."
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+# app.run(debug=True)
