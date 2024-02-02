@@ -22,6 +22,7 @@ h1 {
     margin-bottom: 20px;
     font-size: 24px;
     color: #333;
+    margin-right: 20px;
 }
 
 input[type="text"], input[type="password"] {
@@ -62,4 +63,8 @@ input[type="submit"]:hover {
     body {
         margin-top: 20px;
     }
+}
+
+a{
+    margin-left: 20px;
 }

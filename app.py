@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
+from instance.secret import SECRET_KEY
 import uuid
 import os
 import datetime
@@ -32,7 +33,7 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
 
-app.secret_key = 'SECRET6272X'
+app.secret_key = SECRET_KEY
 
 if __name__ == '__main__':
     with app.app_context():
