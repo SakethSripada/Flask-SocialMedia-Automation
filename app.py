@@ -5,8 +5,11 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo, ValidationError, Regexp
-from instance.secret import SECRET_KEY
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
+from instance.secret import SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+from flask_migrate import Migrate
 import uuid
 import os
 import datetime
@@ -19,12 +22,24 @@ app = Flask(__name__, template_folder="templates")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db?check_same_thread=False"
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+app.config['MAIL_SERVER'] = MAIL_SERVER
+app.config['MAIL_PORT'] = MAIL_PORT
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = MAIL_USERNAME
+app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
+
+mail = Mail(app)
 
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    email_verified = db.Column(db.Boolean, default=False)
 
     def set_pass(self, password):
         self.password_hash = generate_password_hash(password)
@@ -40,6 +55,16 @@ if __name__ == '__main__':
         db.create_all()
     app.run(debug=True)
 
+s = URLSafeTimedSerializer(app.secret_key)
+
+
+def send_verif_email(user_email):
+    token = s.dumps(user_email, salt="email-confirm")
+    message = Message("Email Verification", recipients=[user_email])
+    link = url_for("confirm_email", token=token, _external=True)
+    message.body = f"Your verification link is: {link}"
+    mail.send(message)
+
 
 class RegisterForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=2, max=20)])
@@ -52,6 +77,7 @@ class RegisterForm(FlaskForm):
     confirm_password = PasswordField("Confirm Password", validators=[DataRequired(),
                                                                      EqualTo("password",
                                                                              message="Passwords Must Match")])
+    email = StringField("Email", validators=[DataRequired(), Email()])
     submit = SubmitField("Sign Up")
 
     def validate_username(self, username):
@@ -77,15 +103,37 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/confirm_email/<token>")
+def confirm_email(token):
+    try:
+        email = s.loads(token, salt="email-confirm", max_age=1800)
+    except SignatureExpired:
+        return "<h1>The token has expired.</h1>"
+    user = User.query.filter_by(email=email).first_or_404()
+    if not user.email_verified:
+        user.email_verified = True
+        db.session.commit()
+        return "<h1>Email Verified Successfully.</h1>"
+    else:
+        return "<h1>Email has already been verified successfully</h1>"
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data)
-        user = User(username=form.username.data, password_hash=hashed_password)
+        user = User(username=form.username.data, password_hash=hashed_password, email=form.email.data)
         db.session.add(user)
-        db.session.commit()
-        return redirect(url_for('login'))
+        try:
+            db.session.commit()
+            send_verif_email(user.email)
+            flash(f"Verification email sent to {user.email}", "info")
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash("An error occurred while registering. Please try again.", "danger")
+            app.logger.error(f"Error during registration: {e}")
     return render_template("register.html", title="Register", form=form)
 
 
