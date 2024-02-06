@@ -10,16 +10,19 @@ from instance.secret import SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from flask_migrate import Migrate
+from datetime import datetime, timedelta
+from flask_wtf.csrf import CSRFProtect
+import json
+import random
 import uuid
 import os
-import datetime
 import sched
 import time
 import threading
 import logging
 
 app = Flask(__name__, template_folder="templates")
-
+csrf = CSRFProtect(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db?check_same_thread=False"
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -40,6 +43,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(120), unique=True, nullable=False)
     email_verified = db.Column(db.Boolean, default=False)
+    verification_code = db.Column(db.String(6))
+    verification_code_expiry = db.Column(db.DateTime)
 
     def set_pass(self, password):
         self.password_hash = generate_password_hash(password)
@@ -59,11 +64,16 @@ s = URLSafeTimedSerializer(app.secret_key)
 
 
 def send_verif_email(user_email):
-    token = s.dumps(user_email, salt="email-confirm")
-    message = Message("Email Verification", recipients=[user_email])
-    link = url_for("confirm_email", token=token, _external=True)
-    message.body = f"Your verification link is: {link}"
-    mail.send(message)
+    user = User.query.filter_by(email=user_email).first()
+    if user:
+        verification_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+        user.verification_code = verification_code
+        user.verification_code_expiry = datetime.utcnow() + timedelta(minutes=10)
+
+        db.session.commit()
+        message = Message("Email Verification", recipients=[user.email])
+        message.body = f"Your code is: {verification_code}"
+        mail.send(message)
 
 
 class RegisterForm(FlaskForm):
@@ -78,6 +88,7 @@ class RegisterForm(FlaskForm):
                                                                      EqualTo("password",
                                                                              message="Passwords Must Match")])
     email = StringField("Email", validators=[DataRequired(), Email()])
+    verif_code = StringField("Code", validators=[DataRequired()])
     submit = SubmitField("Sign Up")
 
     def validate_username(self, username):
@@ -103,37 +114,43 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/confirm_email/<token>")
-def confirm_email(token):
-    try:
-        email = s.loads(token, salt="email-confirm", max_age=1800)
-    except SignatureExpired:
-        return "<h1>The token has expired.</h1>"
-    user = User.query.filter_by(email=email).first_or_404()
-    if not user.email_verified:
-        user.email_verified = True
-        db.session.commit()
-        return "<h1>Email Verified Successfully.</h1>"
-    else:
-        return "<h1>Email has already been verified successfully</h1>"
+@app.route('/send-verification-email', methods=['POST'])
+def send_verification_email():
+    data = json.loads(request.data)
+    email = data.get('email')
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return jsonify({'message': 'An account with this email already exists.'}), 400
+
+    verification_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    expiry = datetime.utcnow() + timedelta(minutes=10)
+
+    session['verification_code'] = verification_code
+    session['verification_email'] = email
+    session['verification_expiry'] = expiry.strftime("%Y-%m-%d %H:%M:%S")
+
+    message = Message("Email Verification", recipients=[email])
+    message.body = f"Your verification code is: {verification_code}"
+    mail.send(message)
+    return jsonify({'message': 'Verification email sent. Please check your inbox.'})
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.password.data)
-        user = User(username=form.username.data, password_hash=hashed_password, email=form.email.data)
-        db.session.add(user)
-        try:
+        if (session.get('verification_code') == form.verif_code.data and
+                session.get('verification_email') == form.email.data and
+                datetime.utcnow() <= datetime.strptime(session.get('verification_expiry'), "%Y-%m-%d %H:%M:%S")):
+            hashed_password = generate_password_hash(form.password.data)
+            new_user = User(username=form.username.data, password_hash=hashed_password, email=form.email.data,
+                            email_verified=True)
+            db.session.add(new_user)
             db.session.commit()
-            send_verif_email(user.email)
-            flash(f"Verification email sent to {user.email}", "info")
+            flash("You have been successfully registered and verified. Please log in.", "success")
             return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback()
-            flash("An error occurred while registering. Please try again.", "danger")
-            app.logger.error(f"Error during registration: {e}")
+        else:
+            flash("Invalid or expired verification code.", "danger")
     return render_template("register.html", title="Register", form=form)
 
 
@@ -151,8 +168,13 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_pass(form.password.data):
-            session["user_id"] = user.id
-            return redirect(url_for("home"))
+            if user.email_verified:
+                session["user_id"] = user.id
+                return redirect(url_for("home"))
+            elif not user.email_verified:
+                flash("Email has not been verified. Please verify your email.")
+            else:
+                flash("Unknown Error Encountered.")
         else:
             flash("Login Failed. Check username and password", "danger")
     return render_template("login.html", title="Login", form=form)
@@ -219,8 +241,8 @@ def post_image():
     photo.save(file_path)
 
     if scheduled_time:
-        scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        post_delay = (scheduled_time - datetime.datetime.now()).total_seconds()
+        scheduled_time = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        post_delay = (scheduled_time - datetime.now()).total_seconds()
         if post_delay > 0:
             sched_item(post_delay, exec_post, username, password, file_path, caption)
             return "Successfully Scheduled."
@@ -240,8 +262,8 @@ def like_post():
     scheduled_time = request.form.get("schedule_time_like")
 
     if scheduled_time:
-        scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        like_delay = (scheduled_time - datetime.datetime.now()).total_seconds()
+        scheduled_time = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        like_delay = (scheduled_time - datetime.now()).total_seconds()
         if like_delay > 0:
             sched_item(like_delay, exec_like, username, password, media_id)
             return "Successfully Scheduled."
@@ -262,8 +284,8 @@ def comment_ig():
     scheduled_time = request.form.get("schedule_time_com")
 
     if scheduled_time:
-        scheduled_time = datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        comment_delay = (scheduled_time - datetime.datetime.now()).total_seconds()
+        scheduled_time = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        comment_delay = (scheduled_time - datetime.now()).total_seconds()
         if comment_delay > 0:
             sched_item(comment_delay, exec_comment, username, password, media_id, comment)
             return "Successfully Scheduled."
@@ -273,6 +295,17 @@ def comment_ig():
     else:
         exec_comment(username, password, media_id, comment)
         return "Successfully Commented."
+
+
+@app.cli.command("delete-users")
+def delete_users():
+    try:
+        num_deleted = User.query.delete()
+        db.session.commit()
+        print(f"Deleted {num_deleted} users.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"An error occurred: {e}")
 
 # if __name__ == '__main__':
 # app.run(debug=True)

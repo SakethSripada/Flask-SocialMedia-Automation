@@ -5,3 +5,7 @@ flask db migrate -m "initial migration"
 flask db upgrade
 
 IF YOU DO NOT RUN THESE COMMANDS, THE TABLE WILL NOT BE CREATED IN THE DB, AND THE APP WILL NOT WORK!
+
+Any time you make a change to the database, RUN:
+flask db migrate -m "Your change message"
+flaks db upgrade
