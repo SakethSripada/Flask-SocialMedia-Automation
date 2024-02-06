@@ -1,0 +1,7 @@
+After getting this repository, ENSURE that you run the following commands for the Database to work:
+
+flask db init
+flask db migrate -m "initial migration"
+flask db upgrade
+
+IF YOU DO NOT RUN THESE COMMANDS, THE TABLE WILL NOT BE CREATED IN THE DB, AND THE APP WILL NOT WORK!
