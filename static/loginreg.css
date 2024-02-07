@@ -59,6 +59,23 @@ input[type="submit"]:hover {
     background-color: #4cae4c;
 }
 
+#sendVerifEmail{
+     width: 10%;
+    padding: 12px;
+    border-radius: 5px;
+    border: none;
+    background-color: #5cb85c;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#sendVerifEmail:hover{
+    background-color: #4cae4c;
+    transform: scale(1.1);
+    transition: 0.2s ease-in-out
+}
+
 @media (max-height: 500px) {
     body {
         margin-top: 20px;
