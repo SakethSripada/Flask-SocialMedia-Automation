@@ -8,7 +8,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
 from secret import SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+from itsdangerous import URLSafeTimedSerializer
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
@@ -111,7 +111,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def home():
-    return render_template("index.html")
+    logged_in = is_user_logged_in()
+    return render_template("index.html", logged_in=logged_in)
 
 
 @app.route('/send-verification-email', methods=['POST'])
@@ -185,6 +186,10 @@ def logout():
     session.pop("user_id", None)
     flash("Successfully Logged Out.", "info")
     return redirect(url_for("login"))
+
+
+def is_user_logged_in():
+    return 'user_id' in session
 
 
 def ig_login(username, password):

@@ -14,12 +14,15 @@
         <div class="nav-container">
             <a href="/" class="nav-logo">Social Media Automation</a>
             <ul class="nav-links">
-                <li><a href="">Home</a></li>
-                <li><a href="">Social Medias</a></li>
-                <li><a href="">My Stats</a></li>
+            <li><a href="">Home</a></li>
+            <li><a href="">Social Medias</a></li>
+            <li><a href="">My Stats</a></li>
+            {% if logged_in %}
+                <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+            {% else %}
                 <li><a href="{{ url_for('login') }}">Login</a></li>
                 <li><a href="{{ url_for('register') }}">Register</a></li>
-                <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+            {% endif %}
             </ul>
         </div>
     </nav>
