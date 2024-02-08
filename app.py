@@ -158,7 +158,7 @@ def register():
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=2, max=20)])
     password = PasswordField("Password", validators=[DataRequired()])
-    submit = SubmitField("login")
+    submit = SubmitField("Login")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -187,6 +187,62 @@ def logout():
     flash("Successfully Logged Out.", "info")
     return redirect(url_for("login"))
 
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Request Password Reset")
+
+
+def send_reset_email(user):
+    token = s.dumps(user.email, salt='reset-password')
+    msg = Message('Password Reset Request', sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
+    reset_url = url_for('reset_token', token=token, _external=True)
+    msg.body = f'''To reset your password, visit the following link:
+{reset_url}
+
+If you did not make this request, simply ignore this email and no changes will be made.
+'''
+    mail.send(msg)
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_reset_email(user)
+        flash('If an account with that email exists, a password reset email has been sent.', 'info')
+        return redirect(url_for('login'))
+    return render_template('forgotpassword.html', title='Reset Password', form=form)
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("Password", validators=[
+        DataRequired(),
+        Regexp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$',
+               message="Your password must be at least 8 characters long and include a letter, number, and special "
+                       "character.")
+    ])
+    confirm_new_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_token(token):
+    try:
+        email = s.loads(token, salt='reset-password', max_age=1800)
+    except ValidationError:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('forgot_password'))
+    user = User.query.filter_by(email=email).first()
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_pass(form.password.data)
+        db.session.commit()
+        flash('Your password has been updated! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('resetpassword.html', title='Reset Password', form=form)
 
 def is_user_logged_in():
     return 'user_id' in session
