@@ -8,7 +8,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
 from secret import SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
@@ -156,7 +156,7 @@ def register():
 
 
 class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired(), Length(min=2, max=20)])
+    username = StringField("Username or Email", validators=[DataRequired(), Length(min=2, max=24)])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Login")
 
@@ -230,9 +230,10 @@ class ResetPasswordForm(FlaskForm):
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_token(token):
+    logging.debug(f'Received token for password reset: {token}')
     try:
         email = s.loads(token, salt='reset-password', max_age=1800)
-    except ValidationError:
+    except BadSignature:
         flash('That is an invalid or expired token', 'warning')
         return redirect(url_for('forgot_password'))
     user = User.query.filter_by(email=email).first()
@@ -242,7 +243,8 @@ def reset_token(token):
         db.session.commit()
         flash('Your password has been updated! You are now able to log in', 'success')
         return redirect(url_for('login'))
-    return render_template('resetpassword.html', title='Reset Password', form=form)
+    return render_template('resetpassword.html', title='Reset Password', form=form, token=token)
+
 
 def is_user_logged_in():
     return 'user_id' in session
