@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, flash, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, flash, render_template, redirect, url_for, session, abort
 from instagrapi import Client
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
@@ -308,6 +308,9 @@ def post_image():
         post_delay = (scheduled_time - datetime.now()).total_seconds()
         if post_delay > 0:
             sched_item(post_delay, exec_post, username, password, file_path, caption)
+            timestamps = session.get("scheduled_posts_timestamps", [])
+            timestamps.append(datetime.utcnow())
+            session["scheduled_posts_timestamps"] = timestamps
             return "Successfully Scheduled."
         else:
             exec_post(username, password, file_path, caption)
@@ -358,6 +361,21 @@ def comment_ig():
     else:
         exec_comment(username, password, media_id, comment)
         return "Successfully Commented."
+
+
+def rate_limit():
+    timestamps = session.get("scheduled_posts_timestamps", [])
+    prev_hour = datetime.utcnow() - timedelta(hours=1)
+    timestamps_prev_hour = [ts for ts in timestamps if ts > prev_hour]
+    session["scheduled_posts_timestamps"] = timestamps_prev_hour
+    return len(timestamps_prev_hour) >= 50
+
+
+@app.before_request
+def check_rate_limit():
+    if request.endpoint in ["post_image", "like_post", "comment_ig"]:
+        if rate_limit():
+            abort(429, description="You have reached 50 scheduled posts in one hour. No more posts may be scheduled.")
 
 
 @app.cli.command("delete-users")
