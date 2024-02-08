@@ -8,4 +8,8 @@ IF YOU DO NOT RUN THESE COMMANDS, THE TABLE WILL NOT BE CREATED IN THE DB, AND T
 
 Any time you make a change to the database, RUN:
 flask db migrate -m "Your change message"
-flaks db upgrade
+flask db upgrade
+
+TO RUN APP: flask run  - into the CLI
+
+Or set up run configuration with FlaskServer, do not use python app.py, this does not work
