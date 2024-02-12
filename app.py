@@ -403,7 +403,7 @@ def comment_ig():
 def rate_limit():
     timestamps = session.get("scheduled_posts_timestamps", [])
     prev_hour = datetime.utcnow() - timedelta(hours=1)
-    timestamps_prev_hour = [ts for ts in timestamps if ts > prev_hour]
+    timestamps_prev_hour = [ts.replace(tzinfo=None) for ts in timestamps if ts.replace(tzinfo=None) > prev_hour]
     session["scheduled_posts_timestamps"] = timestamps_prev_hour
     return len(timestamps_prev_hour) >= 50
 
