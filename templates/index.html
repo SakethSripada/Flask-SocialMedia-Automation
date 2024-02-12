@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script async src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Social Media Automation</title>
 </head>
 <body>
@@ -34,6 +35,7 @@
 
     <h2>Post an Image</h2>
     <form action="/post" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         Username: <label>
         <input type="text" name="username" required>
     </label><br>
@@ -56,6 +58,7 @@
     </form>
 
     <h2>Like a Post</h2>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <form action="/like" method="post">
         Username: <label>
         <input type="text" name="username" required>
@@ -73,6 +76,7 @@
     </form>
 
     <h2>Comment on a Post</h2>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <form action="/comment" method="post">
         Username: <label>
         <input type="text" name="username" required>

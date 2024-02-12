@@ -308,6 +308,7 @@ def download_image(image_url, file_name):
 
 @app.route("/post", methods=["POST"])
 def post_image():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     caption = request.form['caption']
@@ -354,11 +355,9 @@ def post_image():
         return "Successfully Posted"
 
 
-csrf.exempt(post_image)
-
-
 @app.route("/like", methods=["POST"])
 def like_post():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
@@ -380,6 +379,7 @@ def like_post():
 
 @app.route("/comment", methods=["POST"])
 def comment_ig():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
