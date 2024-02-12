@@ -8,11 +8,11 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
 from secret import API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
-from openai import OpenAI, BadRequestError
+from openai import OpenAI, BadRequestError, RateLimitError
 import requests
 import json
 import random
@@ -330,6 +330,8 @@ def post_image():
         except BadRequestError as e:
             app.logger.error(f"OpenAI API error: {e}")
             flash("An error occurred with the image generation service. Please try again later.", "error")
+        except RateLimitError:
+            flash("OpenAI rate limit reached. Please try again later.")
         except EnvironmentError:
             flash("Error generating AI Image. Please try again later.")
     else:
