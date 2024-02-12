@@ -6,12 +6,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
-from secret import SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
+from secret import API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
+from openai import OpenAI, BadRequestError
+import requests
 import json
 import random
 import uuid
@@ -35,6 +37,8 @@ app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
 app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
 
 mail = Mail(app)
+
+ai_client = OpenAI(api_key=API_KEY)
 
 
 class User(db.Model):
@@ -291,17 +295,48 @@ def exec_comment(username, password, media_id, comment):
         logging.error("Comment on post failed.")
 
 
+def download_image(image_url, file_name):
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], file_name)
+        with open(file_path, 'wb') as f:
+            f.write(response.content)
+        return file_path
+    else:
+        raise Exception(f"Failed to download image. Status code: {response.status_code}")
+
+
 @app.route("/post", methods=["POST"])
 def post_image():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     caption = request.form['caption']
-    photo = request.files["photo"]
+    ai_prompt = request.form["ai_prompt"]
     scheduled_time = request.form.get("schedule_time")
-    unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
 
-    file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
-    photo.save(file_path)
+    if ai_prompt:
+        try:
+            response = ai_client.images.generate(
+                model="dall-e-2",
+                prompt=ai_prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            image_url = response.data[0].url
+            unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
+            file_path = download_image(image_url, unique_filename)
+        except BadRequestError as e:
+            app.logger.error(f"OpenAI API error: {e}")
+            flash("An error occurred with the image generation service. Please try again later.", "error")
+        except EnvironmentError:
+            flash("Error generating AI Image. Please try again later.")
+    else:
+        photo = request.files["photo"]
+        unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+        photo.save(file_path)
 
     if scheduled_time:
         scheduled_time = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
@@ -322,6 +357,7 @@ def post_image():
 
 @app.route("/like", methods=["POST"])
 def like_post():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
@@ -343,6 +379,7 @@ def like_post():
 
 @app.route("/comment", methods=["POST"])
 def comment_ig():
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     media_id = request.form['media_id']
@@ -366,7 +403,7 @@ def comment_ig():
 def rate_limit():
     timestamps = session.get("scheduled_posts_timestamps", [])
     prev_hour = datetime.utcnow() - timedelta(hours=1)
-    timestamps_prev_hour = [ts for ts in timestamps if ts > prev_hour]
+    timestamps_prev_hour = [ts.replace(tzinfo=None) for ts in timestamps if ts.replace(tzinfo=None) > prev_hour]
     session["scheduled_posts_timestamps"] = timestamps_prev_hour
     return len(timestamps_prev_hour) >= 50
 
