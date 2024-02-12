@@ -318,7 +318,7 @@ def post_image():
     if ai_prompt:
         try:
             response = ai_client.images.generate(
-                model="dall-e-3",
+                model="dall-e-2",
                 prompt=ai_prompt,
                 size="1024x1024",
                 quality="standard",
