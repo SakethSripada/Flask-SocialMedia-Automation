@@ -10,6 +10,10 @@ Any time you make a change to the database, RUN:
 flask db migrate -m "Your change message"
 flask db upgrade
 
-TO RUN APP: flask run  - into the CLI
+TO RUN APP, ENTER THE FOLLOWING INTO CLI: flask run
 
 Or set up run configuration with FlaskServer, do not use python app.py, this does not work
+
+Commands for deleting users:
+Delete all users: flask delete-all-users
+Delete one or more users: flask delete-users user1,user2,user3, etc        - COMMA SEPARATED WITHOUT SPACES
