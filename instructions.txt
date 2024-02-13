@@ -22,7 +22,7 @@ IF YOU DO NOT RUN THESE COMMANDS, THE TABLE WILL NOT BE CREATED IN THE DB, AND T
 
 ENSURE THAT YOU COMPLETE ALL OF THE ABOVE STEPS! THEY ARE REQUIRED FOR THE APP TO WORK!
 
-Commands for deleting users:
+Commands:
 Delete all users: flask delete-all-users
 Delete one or more users: flask delete-users user1,user2,user3, etc        - TYPE USERS COMMA SEPARATED WITHOUT SPACES
-
+List all users: flask list-users

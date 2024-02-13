@@ -13,6 +13,7 @@ from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
 from openai import OpenAI, BadRequestError, RateLimitError
+from flask.cli import with_appcontext
 import click
 import requests
 import json
@@ -484,6 +485,23 @@ def delete_users(usernames):
             print(f"An error occurred while deleting '{username}': {e}")
 
     print(f"Total users deleted: {deleted_users}")
+
+
+# CLI command so that a list of all users is displayed, type in: flask list-users
+@click.command('list-users')
+@with_appcontext
+def list_users():
+    users = User.query.all()
+    print("List of users:")
+    for user in users:
+        print(f"ID: {user.id}, Username: {user.username}, Email: {user.email}")
+
+
+def register_commands(app):
+    app.cli.add_command(list_users)
+
+
+register_commands(app)
 
 # if __name__ == '__main__':
 # app.run(debug=True)
