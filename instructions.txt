@@ -1,19 +1,28 @@
-After getting this repository, ENSURE that you run the following commands for the Database to work:
+1. Create a python file called "secret.py" and add values for the following:
+   API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 
-flask db init
-flask db migrate -m "initial migration"
-flask db upgrade
+   (the API_KEY is for OpenAI, rename if you wish)
+
+2. ENSURE that you run the following commands for the Database to work:
+
+  flask db init
+  flask db migrate -m "initial migration"
+  flask db upgrade
 
 IF YOU DO NOT RUN THESE COMMANDS, THE TABLE WILL NOT BE CREATED IN THE DB, AND THE APP WILL NOT WORK!
 
-Any time you make a change to the database, RUN:
-flask db migrate -m "Your change message"
-flask db upgrade
+3. Any time you make a change to the database, RUN:
+   flask db migrate -m "Your change message"
+   flask db upgrade
 
-TO RUN APP, ENTER THE FOLLOWING INTO CLI: flask run
+4. TO RUN APP, ENTER THE FOLLOWING INTO CLI: flask run
 
-Or set up run configuration with FlaskServer, do not use python app.py, this does not work
+   Or set up run configuration with FlaskServer, do not use python app.py, this does not work
+
+
+ENSURE THAT YOU COMPLETE ALL OF THE ABOVE STEPS! THEY ARE REQUIRED FOR THE APP TO WORK!
 
 Commands for deleting users:
 Delete all users: flask delete-all-users
-Delete one or more users: flask delete-users user1,user2,user3, etc        - COMMA SEPARATED WITHOUT SPACES
+Delete one or more users: flask delete-users user1,user2,user3, etc        - TYPE USERS COMMA SEPARATED WITHOUT SPACES
+
