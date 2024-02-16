@@ -36,13 +36,13 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <form action="/post_tweet" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        Tweet: <label>
+        Tweet Content: <label>
         <textarea name="tweet_content" required></textarea>
     </label><br>
          Schedule Time: <label>
     <input type="datetime-local" name="schedule_time_com">
     </label><br>
-        <input type="submit" value="Comment" class = "submit-btn">
+        <input type="submit" value="Tweet" class = "submit-btn">
     </form>
     </div>
     </div>
