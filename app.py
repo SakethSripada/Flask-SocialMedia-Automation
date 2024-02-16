@@ -6,6 +6,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
+
+import secret
 from secret import API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature
@@ -14,6 +16,9 @@ from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
 from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
+import base64
+import hashlib
+import tweepy
 import click
 import requests
 import json
@@ -24,6 +29,8 @@ import sched
 import time
 import threading
 import logging
+
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # configurations
 app = Flask(__name__, template_folder="templates")
@@ -450,6 +457,95 @@ def check_rate_limit():
     if request.endpoint in ["post_image", "like_post", "comment_ig"]:
         if rate_limit():
             abort(429, description="You have reached 50 scheduled posts in one hour. No more posts may be scheduled.")
+
+
+CALLBACK_URI = 'http://127.0.0.1:5000/auth/twitter/callback'
+
+
+def pkce_transform(code_verifier):
+    code_challenge = hashlib.sha256(code_verifier.encode('utf-8')).digest()
+    code_challenge = base64.urlsafe_b64encode(code_challenge).decode('utf-8').replace('=', '')
+    return code_challenge
+
+
+@app.route('/twitter/login')
+def twitter_login():
+    code_verifier = base64.urlsafe_b64encode(os.urandom(30)).decode('utf-8').replace('=', '')
+    code_challenge = pkce_transform(code_verifier)
+    session['code_verifier'] = code_verifier
+
+    params = {
+        'response_type': 'code',
+        'client_id': secret.OAUTH_CLIENT_ID,
+        'redirect_uri': CALLBACK_URI,
+        'scope': 'tweet.read users.read follows.read follows.write tweet.write',
+        'state': 'dfhufhdkfndne',
+        'code_challenge': code_challenge,
+        'code_challenge_method': 'S256'
+    }
+    url_params = "&".join([f"{key}={value}" for key, value in params.items()])
+    authorization_url = f"https://twitter.com/i/oauth2/authorize?{url_params}"
+    return redirect(authorization_url)
+
+
+@app.route('/auth/twitter/callback')
+def twitter_callback():
+    code = request.args.get('code')
+    code_verifier = session.pop('code_verifier', None)
+
+    if code and code_verifier:
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + base64.b64encode(
+                f'{secret.OAUTH_CLIENT_ID}:{secret.OAUTH_CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')
+        }
+        payload = {
+            'code': code,
+            'grant_type': 'authorization_code',
+            'client_id': secret.OAUTH_CLIENT_ID,
+            'redirect_uri': CALLBACK_URI,
+            'code_verifier': code_verifier
+        }
+        response = requests.post('https://api.twitter.com/2/oauth2/token', headers=headers, data=payload)
+
+        if response.ok:
+            token_data = response.json()
+            session['access_token'] = token_data['access_token']
+            return redirect(url_for('tweet_form'))
+        else:
+            return f"Error fetching access token: {response.text}", 400
+    else:
+        return "Authorization failed.", 400
+
+
+@app.route('/post_tweet', methods=['POST'])
+def post_tweet():
+    access_token = session.get('access_token')
+    if not access_token:
+        flash('No access token found, please log in again.', 'error')
+        return redirect(url_for('twitter_login'))
+
+    tweet_content = request.form['tweet_content']
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
+    payload = {
+        'text': tweet_content
+    }
+    response = requests.post('https://api.twitter.com/2/tweets', headers=headers, json=payload)
+
+    if response.ok:
+        flash('Tweet posted successfully!', 'success')
+        return redirect(url_for('tweet_form'))
+    else:
+        app.logger.error(f'Failed to post tweet: {response.status_code}, {response.text}')
+        flash(f'An error occurred while posting the tweet: {response.text}', 'error')
+        return redirect(url_for('tweet_form'))
+
+
+@app.route('/tweet_form')
+def tweet_form():
+    return render_template('tweet_form.html', logged_in='user_id' in session)
 
 
 # CLI command so that all the users can quickly be deleted, type in: flask delete-all-users
