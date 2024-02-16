@@ -520,16 +520,14 @@ def twitter_callback():
 
 @app.route('/post_tweet', methods=['POST'])
 def post_tweet():
-    ai_prompt = request.form["ai_prompt"]
+    ai_prompt = request.form.get("ai_prompt")
+    scheduled_time = request.form.get("schedule_time")
     access_token = session.get('access_token')
+
     if not access_token:
         flash('No access token found, please log in again.', 'error')
         return redirect(url_for('twitter_login'))
 
-    tweet_content = request.form['tweet_content']
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
     if ai_prompt:
         try:
             generated_tweet = ai_client.chat.completions.create(
@@ -538,27 +536,45 @@ def post_tweet():
                     {"role": "user", "content": ai_prompt},
                 ]
             )
-
             tweet_content = generated_tweet.choices[0].message.content.strip()
         except BadRequestError as e:
             app.logger.error(f"OpenAI API error: {e}")
             flash("An error occurred with the AI generation service. Please try again later.", "error")
+            return redirect(url_for('tweet_form'))
         except RateLimitError:
             flash("OpenAI rate limit reached. Please try again later.")
+            return redirect(url_for('tweet_form'))
         except EnvironmentError:
             flash("Error generating AI Tweet. Please try again later.")
+            return redirect(url_for('tweet_form'))
+    else:
+        tweet_content = request.form.get('tweet_content')
+
+    if scheduled_time:
+        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        delay = (scheduled_time_dt - datetime.now()).total_seconds()
+        if delay > 0:
+            sched_item(delay, exec_post_tweet, access_token, tweet_content)
+            flash('Tweet scheduled successfully!', 'success')
+        else:
+            flash('Scheduled time has passed. Please choose a future time.', 'error')
+    else:
+        exec_post_tweet(access_token, tweet_content)
+        flash('Tweet posted successfully!', 'success')
+
+    return redirect(url_for('tweet_form'))
+
+
+def exec_post_tweet(access_token, tweet_content):
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
     payload = {
         'text': tweet_content
     }
     response = requests.post('https://api.twitter.com/2/tweets', headers=headers, json=payload)
-
-    if response.ok:
-        flash('Tweet posted successfully!', 'success')
-        return redirect(url_for('tweet_form'))
-    else:
+    if not response.ok:
         app.logger.error(f'Failed to post tweet: {response.status_code}, {response.text}')
-        flash(f'An error occurred while posting the tweet: {response.text}', 'error')
-        return redirect(url_for('tweet_form'))
 
 
 @app.route('/tweet_form')
