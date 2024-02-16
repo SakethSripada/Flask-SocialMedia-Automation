@@ -520,6 +520,7 @@ def twitter_callback():
 
 @app.route('/post_tweet', methods=['POST'])
 def post_tweet():
+    ai_prompt = request.form["ai_prompt"]
     access_token = session.get('access_token')
     if not access_token:
         flash('No access token found, please log in again.', 'error')
@@ -529,6 +530,23 @@ def post_tweet():
     headers = {
         'Authorization': f'Bearer {access_token}'
     }
+    if ai_prompt:
+        try:
+            generated_tweet = ai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": ai_prompt},
+                ]
+            )
+
+            tweet_content = generated_tweet.choices[0].message.content.strip()
+        except BadRequestError as e:
+            app.logger.error(f"OpenAI API error: {e}")
+            flash("An error occurred with the AI generation service. Please try again later.", "error")
+        except RateLimitError:
+            flash("OpenAI rate limit reached. Please try again later.")
+        except EnvironmentError:
+            flash("Error generating AI Tweet. Please try again later.")
     payload = {
         'text': tweet_content
     }
