@@ -6,8 +6,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
-
-import secret
 from secret import API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USERNAME
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature
@@ -16,6 +14,9 @@ from datetime import datetime, timedelta
 from flask_wtf.csrf import CSRFProtect
 from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+import secret
 import base64
 import hashlib
 import tweepy
@@ -67,6 +68,23 @@ class User(db.Model):
     def check_pass(self, password):
         return check_password_hash(self.password_hash, password)
 
+
+class ScheduledTweet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    tweet_content = db.Column(db.Text, nullable=False)
+    scheduled_time = db.Column(db.DateTime, nullable=True)
+    post_interval_seconds = db.Column(db.Integer, nullable=True)
+    job_id = db.Column(db.String(255), unique=True, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('scheduled_tweets', lazy=True))
+
+
+app.config['SCHEDULER_JOBSTORES'] = {
+    'default': SQLAlchemyJobStore(url=app.config["SQLALCHEMY_DATABASE_URI"])
+}
+twitter_scheduler = BackgroundScheduler(jobstores=app.config['SCHEDULER_JOBSTORES'])
+twitter_scheduler.start()
 
 app.secret_key = SECRET_KEY
 # initialize app and create DB
@@ -518,63 +536,127 @@ def twitter_callback():
         return "Authorization failed.", 400
 
 
+def exec_post_tweet(access_token, ai_prompt=None, tweet_content=None, is_ai_generated=False):
+    if is_ai_generated and ai_prompt:
+        tweet_content = generate_tweet_content(ai_prompt)
+        if tweet_content is None:
+            app.logger.error("Failed to generate tweet content.")
+            return
+    elif not tweet_content:
+        app.logger.error("Tweet content is missing.")
+        return
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+    payload = {'text': tweet_content}
+    response = requests.post('https://api.twitter.com/2/tweets', headers=headers, json=payload)
+
+    if not response.ok:
+        app.logger.error(f'Failed to post tweet: {response.status_code}, {response.text}')
+
+twitter_scheduler = BackgroundScheduler()
+twitter_scheduler.start()
+
+
+def generate_tweet_content(ai_prompt):
+    if not ai_prompt:
+        return None
+
+    try:
+        generated_tweet = ai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": ai_prompt},
+            ],
+            presence_penalty=0.6,
+            frequency_penalty=0.6,
+            temperature=0.7
+        )
+        tweet_content = generated_tweet.choices[0].message.content.strip()
+
+        if len(tweet_content) > 250:
+            tweet_content = tweet_content[:250].rstrip()
+
+        return tweet_content
+    except BadRequestError as e:
+        app.logger.error(f"OpenAI API error: {e}")
+        flash("An error occurred with the AI generation service. Please try again later.", "error")
+    except RateLimitError:
+        flash("OpenAI rate limit reached. Please try again later.")
+    except EnvironmentError:
+        flash("Error generating AI Tweet. Please try again later.")
+    return None
+
+
 @app.route('/post_tweet', methods=['POST'])
 def post_tweet():
-    ai_prompt = request.form.get("ai_prompt")
+    ai_prompt = request.form.get("ai_prompt").strip()
     scheduled_time = request.form.get("schedule_time")
+    post_interval_hours = float(request.form.get("post_interval_hours") or 0)
     access_token = session.get('access_token')
+    post_interval_seconds = post_interval_hours * 3600
+    user_id = session.get('user_id')
 
-    if not access_token:
-        flash('No access token found, please log in again.', 'error')
+    if not access_token or not user_id:
+        flash('No access token found or user not logged in, please log in again.', 'error')
         return redirect(url_for('twitter_login'))
 
     if ai_prompt:
-        try:
-            generated_tweet = ai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": ai_prompt},
-                ]
-            )
-            tweet_content = generated_tweet.choices[0].message.content.strip()
-        except BadRequestError as e:
-            app.logger.error(f"OpenAI API error: {e}")
-            flash("An error occurred with the AI generation service. Please try again later.", "error")
-            return redirect(url_for('tweet_form'))
-        except RateLimitError:
-            flash("OpenAI rate limit reached. Please try again later.")
-            return redirect(url_for('tweet_form'))
-        except EnvironmentError:
-            flash("Error generating AI Tweet. Please try again later.")
+        tweet_content = generate_tweet_content(ai_prompt)
+        if not tweet_content:
             return redirect(url_for('tweet_form'))
     else:
         tweet_content = request.form.get('tweet_content')
+
+    job_id = f'{user_id}_{uuid.uuid4()}'
 
     if scheduled_time:
         scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
         delay = (scheduled_time_dt - datetime.now()).total_seconds()
         if delay > 0:
-            sched_item(delay, exec_post_tweet, access_token, tweet_content)
+            if ai_prompt:
+                twitter_scheduler.add_job(exec_post_tweet, 'date', run_date=scheduled_time_dt,
+                                          args=[access_token, ai_prompt, None, True], id=job_id)
+            else:
+                twitter_scheduler.add_job(exec_post_tweet, 'date', run_date=scheduled_time_dt,
+                                          args=[access_token, None, tweet_content, False], id=job_id)
             flash('Tweet scheduled successfully!', 'success')
         else:
             flash('Scheduled time has passed. Please choose a future time.', 'error')
+    elif post_interval_hours:
+        if ai_prompt:
+            twitter_scheduler.add_job(exec_post_tweet, 'interval', seconds=post_interval_seconds,
+                                      args=[access_token, ai_prompt, None, True], id=job_id,
+                                      next_run_time=datetime.now())
+        else:
+            twitter_scheduler.add_job(exec_post_tweet, 'interval', seconds=post_interval_seconds,
+                                      args=[access_token, None, tweet_content, False], id=job_id,
+                                      next_run_time=datetime.now())
+        flash(f'Tweet scheduled to be posted every {post_interval_hours} hours!', 'success')
     else:
-        exec_post_tweet(access_token, tweet_content)
+        exec_post_tweet(access_token, None, tweet_content, is_ai_generated=False)
         flash('Tweet posted successfully!', 'success')
 
+    new_scheduled_tweet = ScheduledTweet(
+        user_id=user_id,
+        tweet_content=tweet_content,
+        scheduled_time=scheduled_time_dt if scheduled_time else None,
+        post_interval_seconds=post_interval_seconds if post_interval_hours else None,
+        job_id=job_id
+    )
+    db.session.add(new_scheduled_tweet)
+    db.session.commit()
     return redirect(url_for('tweet_form'))
 
 
-def exec_post_tweet(access_token, tweet_content):
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    payload = {
-        'text': tweet_content
-    }
-    response = requests.post('https://api.twitter.com/2/tweets', headers=headers, json=payload)
-    if not response.ok:
-        app.logger.error(f'Failed to post tweet: {response.status_code}, {response.text}')
+@app.route('/user_recurring_posts')
+def user_recurring_posts():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('Please log in to view recurring posts.', 'info')
+        return redirect(url_for('login'))
+
+    user_scheduled_tweets = ScheduledTweet.query.filter_by(user_id=user_id).all()
+    return render_template('user_recurring_posts.html', scheduled_tweets=user_scheduled_tweets, logged_in=True)
 
 
 @app.route('/tweet_form')
