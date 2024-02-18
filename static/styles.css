@@ -142,4 +142,7 @@ input[type="submit"]:hover {
     background-color: #45a049;
 }
 
+ul li{
+    margin-bottom: 20px;
+}
 

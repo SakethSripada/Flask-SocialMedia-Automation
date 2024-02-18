@@ -553,6 +553,7 @@ def exec_post_tweet(access_token, ai_prompt=None, tweet_content=None, is_ai_gene
     if not response.ok:
         app.logger.error(f'Failed to post tweet: {response.status_code}, {response.text}')
 
+
 twitter_scheduler = BackgroundScheduler()
 twitter_scheduler.start()
 
