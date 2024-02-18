@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script async src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+            <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
+  <!-- <a href="https://www.flaticon.com/free-icons/marketing" title="marketing icons">Marketing icons created by Freepik - Flaticon</a> --->
+    <title>Social Media Automation</title>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">Social Media Automation</a>
+            <ul class="nav-links">
+            <li><a href="{{ url_for('home') }}">Instagram</a></li>
+            <li><a href="{{ url_for('tweet_form') }}">Twitter</a></li>
+            <li><a href="">My Stats</a></li>
+            {% if logged_in %}
+                <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="content-container">
+    <div class = main-content>
+    <h1>Recurring Posts</h1>
+    <ul>
+        {% for tweet in scheduled_tweets %}
+            <li>
+                <strong>Tweet Content:</strong> {{ tweet.tweet_content }} <br>
+                <strong>Scheduled Time:</strong> {{ tweet.scheduled_time }} <br>
+                <strong>Interval:</strong> Every {{ tweet.post_interval_seconds }} seconds <br>
+            </li>
+            <form action="{{ url_for('delete_scheduled_tweet', job_id=tweet.job_id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="submit" value="Delete">
+            </form>
+            {% else %}
+            <li>No recurring posts found.</li>
+            {% endfor %}
+    </ul>
+    </div>
+    </div>
+</body>
+</html>
