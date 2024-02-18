@@ -15,7 +15,7 @@ from flask_wtf.csrf import CSRFProtect
 from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
 import secret
 import base64
 import hashlib
@@ -656,12 +656,45 @@ def user_recurring_posts():
         flash('Please log in to view recurring posts.', 'info')
         return redirect(url_for('login'))
 
-    user_scheduled_tweets = ScheduledTweet.query.filter_by(user_id=user_id).all()
+    current_time = datetime.now()
+
+    user_scheduled_tweets = ScheduledTweet.query.filter(
+        ScheduledTweet.user_id == user_id,
+        (
+                (ScheduledTweet.post_interval_seconds.isnot(None)) |
+                ((ScheduledTweet.scheduled_time.isnot(None)) & (ScheduledTweet.scheduled_time > current_time))
+        )
+    ).all()
+
     return render_template('user_recurring_posts.html', scheduled_tweets=user_scheduled_tweets, logged_in=True)
+
+
+@app.route('/delete_scheduled_tweet/<job_id>', methods=['POST'])
+def delete_scheduled_tweet(job_id):
+    csrf.protect()
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('You need to log in to delete scheduled posts.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        twitter_scheduler.remove_job(job_id)
+    except JobLookupError as e:
+        flash('Failed to delete scheduled post. It may have already been deleted or executed.', 'error')
+        app.logger.error(f"Attempted to delete a non-existent job: {e}")
+
+    ScheduledTweet.query.filter_by(user_id=user_id, job_id=job_id).delete()
+    db.session.commit()
+
+    flash('Scheduled post deleted successfully!', 'success')
+    return redirect(url_for('user_recurring_posts'))
 
 
 @app.route('/tweet_form')
 def tweet_form():
+    access_token = session.get('access_token')
+    if not access_token:
+        return redirect(url_for("/twitter/login"))
     return render_template('tweet_form.html', logged_in='user_id' in session)
 
 

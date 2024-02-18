@@ -35,7 +35,6 @@
     <h1>Twitter Automation</h1>
     <button id="view-schedule-btn" onclick="window.location.href='{{ url_for('user_recurring_posts') }}';">View Scheduled Posts</button>
     <h2>Post a Tweet!</h2>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <form action="/post_tweet" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         Tweet Content: <label>
