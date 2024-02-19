@@ -19,6 +19,7 @@
             <ul class="nav-links">
             <li><a href="{{ url_for('home') }}">Instagram</a></li>
             <li><a href="{{ url_for('tweet_form') }}">Twitter</a></li>
+                <li><a href="{{ url_for('email_form') }}">Emails</a></li>
             <li><a href="">My Stats</a></li>
             {% if logged_in %}
                 <li><a href="{{ url_for('logout') }}">Log Out</a></li>
