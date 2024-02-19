@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script async src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+            <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
+  <!-- <a href="https://www.flaticon.com/free-icons/marketing" title="marketing icons">Marketing icons created by Freepik - Flaticon</a> --->
+    <title>Social Media Automation</title>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">Social Media Automation</a>
+            <ul class="nav-links">
+            <li><a href="{{ url_for('home') }}">Instagram</a></li>
+            <li><a href="{{ url_for('tweet_form') }}">Twitter</a></li>
+            <li><a href="">My Stats</a></li>
+            {% if logged_in %}
+                <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="content-container">
+    <div class = main-content>
+    <h1>Email Automation</h1>
+    <button id="view-schedule-btn" onclick="window.location.href='{{ url_for('user_recurring_posts') }}';">View Scheduled Posts</button>
+    <h2>Send an Email</h2>
+    <form action="/send_email" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        GMail Username: <label>
+        <textarea name="user_email"></textarea>
+    </label><br>
+        GMail App Password: <label>
+        <textarea name="user_password"></textarea>
+    </label><br>
+        Recipients (Separate by Comma): <label>
+        <textarea name="email_recipients"></textarea>
+    </label><br>
+        Content: <label>
+        <textarea name="email_content"></textarea>
+    </label><br>
+        AI Prompt: <label>
+        <textarea name="ai_prompt"></textarea>
+    </label><br>
+         Schedule Time: <label>
+    <input type="datetime-local" name="schedule_time">
+    </label><br>
+        Send Every (hours): <label>
+    <input type="number" step="0.01" name="post_interval_hours">
+    </label><br>
+        <input type="submit" value="Email" class = "submit-btn">
+    </form>
+    </div>
+    </div>
+</body>
+</html>

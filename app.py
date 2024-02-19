@@ -16,6 +16,7 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
+import smtplib
 import secret
 import base64
 import hashlib
@@ -696,6 +697,55 @@ def tweet_form():
     if not access_token:
         return redirect(url_for("/twitter/login"))
     return render_template('tweet_form.html', logged_in='user_id' in session)
+
+
+@app.route("/send_email", methods=["POST"])
+def send_email():
+    csrf.protect()
+    logging.info("Starting to process the /send_email request")
+    user_email = request.form["user_email"]
+    user_password = request.form["user_password"]
+    unsorted_recipients = request.form["email_recipients"]
+    recipients = [recipient.strip() for recipient in unsorted_recipients.split(",")]
+    email_content = request.form["email_content"]
+    ai_prompt = request.form.get("ai_prompt")
+    try:
+        if ai_prompt:
+            try:
+                response = ai_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": ai_prompt},
+                    ],
+                    presence_penalty=0.6,
+                    frequency_penalty=0.6,
+                    temperature=0.7
+                )
+                email_content = response.choices[0].message.content.strip()
+            except BadRequestError as e:
+                app.logger.error(f"OpenAI API error: {e}")
+                flash("An error occurred with the AI generation service. Please try again later.", "error")
+            except RateLimitError:
+                flash("OpenAI rate limit reached. Please try again later.")
+            except EnvironmentError:
+                flash("Error generating AI Email. Please try again later.")
+        else:
+            email_content = request.form.get("email_content")
+            logging.debug(f"Sending email to: {recipients}")
+    except Exception as e:
+        logging.error(f"An error occurred in /send_email: {e}", exc_info=True)
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(user_email, user_password)
+    for recipient in recipients:
+        server.sendmail(user_email, recipient, email_content)
+    return redirect(url_for('email_form'))
+
+
+@app.route("/email_form")
+def email_form():
+    return render_template("emails.html")
 
 
 # CLI command so that all the users can quickly be deleted, type in: flask delete-all-users
