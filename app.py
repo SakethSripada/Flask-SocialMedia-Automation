@@ -162,7 +162,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route('/')
 def home():
     logged_in = is_user_logged_in()
-    return render_template("index.html", logged_in=logged_in)
+    return render_template("landing.html", logged_in=logged_in)
+
+
+@app.route("/instagram_form")
+def instagram_form():
+    return render_template("instagram.html", logged_in='user_id' in session)
 
 
 # route for sending of verification email
@@ -804,11 +809,6 @@ def send_email():
 @app.route("/email_form")
 def email_form():
     return render_template("emails.html", logged_in='user_id' in session)
-
-
-@app.route("/landing")
-def landing():
-    return render_template("landing.html")
 
 
 # CLI command so that all the users can quickly be deleted, type in: flask delete-all-users
