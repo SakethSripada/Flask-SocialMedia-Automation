@@ -81,6 +81,18 @@ class ScheduledTweet(db.Model):
     user = db.relationship('User', backref=db.backref('scheduled_tweets', lazy=True))
 
 
+class ScheduledIGPost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    ai_prompt = db.Column(db.Text, nullable=True)
+    caption = db.Column(db.Text, nullable=True)
+    scheduled_time = db.Column(db.DateTime, nullable=True)
+    post_interval_seconds = db.Column(db.Integer, nullable=True)
+    job_id = db.Column(db.String(255), unique=True, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('scheduled_ig_posts', lazy=True))
+
+
 app.config['SCHEDULER_JOBSTORES'] = {
     'default': SQLAlchemyJobStore(url=app.config["SQLALCHEMY_DATABASE_URI"])
 }
@@ -376,6 +388,7 @@ def post_image():
     scheduled_time = request.form.get("schedule_time")
     post_interval_hours = float(request.form.get("post_interval_hours") or 0)
     post_interval_seconds = post_interval_hours * 3600
+    user_id = session.get('user_id')
     file_path = None
 
     if ai_prompt:
@@ -422,6 +435,17 @@ def post_image():
     else:
         exec_post(username, password, file_path, caption)
         flash('Post published successfully!', 'success')
+
+    new_scheduled_ig = ScheduledIGPost(
+        user_id=user_id,
+        ai_prompt=ai_prompt if ai_prompt else None,
+        caption=caption,
+        scheduled_time=scheduled_time_dt if scheduled_time else None,
+        post_interval_seconds=post_interval_seconds if post_interval_hours else None,
+        job_id=job_id
+    )
+    db.session.add(new_scheduled_ig)
+    db.session.commit()
 
     return redirect(url_for('home'))
 
@@ -671,6 +695,14 @@ def user_recurring_posts():
 
     current_time = datetime.now()
 
+    user_scheduled_ig_posts = ScheduledIGPost.query.filter(
+        ScheduledIGPost.user_id == user_id,
+        (
+                (ScheduledIGPost.post_interval_seconds.isnot(None)) |
+                ((ScheduledIGPost.scheduled_time.isnot(None)) & (ScheduledIGPost.scheduled_time > current_time))
+        )
+    ).all()
+
     user_scheduled_tweets = ScheduledTweet.query.filter(
         ScheduledTweet.user_id == user_id,
         (
@@ -679,27 +711,38 @@ def user_recurring_posts():
         )
     ).all()
 
-    return render_template('user_recurring_posts.html', scheduled_tweets=user_scheduled_tweets, logged_in=True)
+    return render_template('user_recurring_posts.html', scheduled_ig_posts=user_scheduled_ig_posts,
+                           scheduled_tweets=user_scheduled_tweets, logged_in=True)
 
 
-@app.route('/delete_scheduled_tweet/<job_id>', methods=['POST'])
-def delete_scheduled_tweet(job_id):
+@app.route('/delete_scheduled_post/<platform>/<job_id>', methods=['POST'])
+def delete_scheduled_post(platform, job_id):
     csrf.protect()
     user_id = session.get('user_id')
     if not user_id:
         flash('You need to log in to delete scheduled posts.', 'error')
         return redirect(url_for('login'))
 
+    if platform == 'ig':
+        view_scheduler = instagram_scheduler
+        model = ScheduledIGPost
+    elif platform == 'twitter':
+        view_scheduler = twitter_scheduler
+        model = ScheduledTweet
+    else:
+        flash('Invalid platform specified.', 'error')
+        return redirect(url_for('user_recurring_posts'))
+
     try:
-        twitter_scheduler.remove_job(job_id)
+        view_scheduler.remove_job(job_id)
     except JobLookupError as e:
         flash('Failed to delete scheduled post. It may have already been deleted or executed.', 'error')
-        app.logger.error(f"Attempted to delete a non-existent job: {e}")
+        app.logger.error(f"Attempted to delete a non-existent job on {platform}: {e}")
 
-    ScheduledTweet.query.filter_by(user_id=user_id, job_id=job_id).delete()
+    model.query.filter_by(user_id=user_id, job_id=job_id).delete()
     db.session.commit()
 
-    flash('Scheduled post deleted successfully!', 'success')
+    flash(f'Scheduled post on {platform} deleted successfully!', 'success')
     return redirect(url_for('user_recurring_posts'))
 
 

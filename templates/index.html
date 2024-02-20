@@ -34,7 +34,7 @@
     <div class="content-container">
     <div class = main-content>
     <h1>Instagram Automation</h1>
-    <button id="view-schedule-btn">View Scheduled Posts</button>
+    <button id="view-schedule-btn" onclick="window.location.href='{{ url_for('user_recurring_posts') }}';">View Scheduled Posts</button>
 
     <h2>Post an Image</h2>
     <form action="/post" method="post" enctype="multipart/form-data">
