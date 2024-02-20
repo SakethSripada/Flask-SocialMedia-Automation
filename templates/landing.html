@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
+    <script async src="{{ url_for('static', filename='js/landing.js') }}"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
+  <!-- <a href="https://www.flaticon.com/free-icons/marketing" title="marketing icons">Marketing icons created by Freepik - Flaticon</a> --->
+    <title>Social Media Automation</title>
+</head>
+<body>
+     <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">Social Media Automation</a>
+            <ul class="nav-links">
+            <li><a href="{{ url_for('home') }}">Instagram</a></li>
+            <li><a href="{{ url_for('tweet_form') }}">Twitter</a></li>
+                <li><a href="{{ url_for('email_form') }}">Emails</a></li>
+                <li><a href="">My Stats</a></li>
+            {% if logged_in %}
+                <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+            </ul>
+        </div>
+    </nav>
+    <header>
+        <h1>Welcome to Social Media Automation</h1>
+        <p id = "blurb">Automate your social media presence with ease. Take advantage of AI generated Instagram Posts, Tweets, and Emails at regular intervals, you can focus on managing what's important to you.</p>
+        <button>Get Started</button>
+    </header>
+     <div class="slideshow-container">
+    <div class="mySlides fade">
+        <img src="/static/landing1.jpg" alt = "social-media-pic1" style="width:100%">
+    </div>
+    <div class="mySlides fade">
+        <img src="/static/landing2.jpg" alt = "social-media-pic1" style="width:100%">
+    </div>
+    <div class="mySlides fade">
+        <img src="/static/landing3.jpg" alt = "social-media-pic1" style="width:100%">
+    </div>
+    </div>
+    <section id="features" class="features-section">
+        <h2 id = "features-header">Features</h2>
+     <ul>
+         <li>
+                <h3>Instagram</h3>
+                <p>AI generated posts for your Instagram account. Schedule posts at regular intervals to keep your followers engaged.</p>
+         </li>
+         <li>
+                <h3>Twitter</h3>
+                <p>AI generated tweets for your Twitter account. Schedule tweets at regular intervals to keep your followers engaged.</p>
+         </li>
+         <li>
+                <h3>Emails</h3>
+                <p>AI generated emails for your email marketing campaigns. Schedule emails at regular intervals to keep your subscribers engaged.</p>
+         </li>
+         <li>
+                <h3>Dynamic Generation</h3>
+                <p>Worrying about AI generated content being redundant? Don't. We ensure that the content generated is new and interesting.</p>
+         </li>
+         <li>
+                <h3>Integration</h3>
+                <p>Want to make accounts to post live news every day, without lifting a finger? Check out our guide on integrating with third party services.</p>
+                <button id = "Learn More">Learn More</button>
+         </li>
+         <li>
+                <h3>Analytics</h3>
+                <p>Track the performance of your social media accounts. Get insights into the engagement and reach of your posts.</p>
+         </li>
+     </ul>
+    </section>
+
+    <section id="testimonials">
+        <h2>What Our Users Say</h2>
+    </section>
+
+    <section id="pricing">
+        <h2>Pricing Plans</h2>
+    </section>
+
+    <section id="faq">
+        <h2>FAQs</h2>
+    </section>
+
+    <footer>
+        <p>Contact Us | Terms of Service | Privacy Policy</p>
+    </footer>
+</body>
+</html>

@@ -183,8 +183,11 @@ def send_verification_email():
 
     message = Message("Email Verification", recipients=[email])
     message.body = f"Your verification code is: {verification_code}"
-    mail.send(message)
-    return jsonify({'message': 'Verification email sent. Please check your inbox.'})
+    try:
+        mail.send(message)
+        return jsonify({'message': 'Verification email sent. Please check your inbox.'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
 
 # route for account registration
@@ -800,7 +803,12 @@ def send_email():
 
 @app.route("/email_form")
 def email_form():
-    return render_template("emails.html")
+    return render_template("emails.html", logged_in='user_id' in session)
+
+
+@app.route("/landing")
+def landing():
+    return render_template("landing.html")
 
 
 # CLI command so that all the users can quickly be deleted, type in: flask delete-all-users
