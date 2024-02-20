@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='loginreg.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script async src="{{ url_for('static', filename='js/register.js') }}"></script>
             <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
   <!-- <a href="https://www.flaticon.com/free-icons/marketing" title="marketing icons">Marketing icons created by Freepik - Flaticon</a> --->
     <title>Register</title>
@@ -51,33 +53,5 @@
     </form>
     <button type="button" id="sendVerifEmail">Send Verification Email</button>
     <a href="{{ url_for('login') }}">Already have an account? Click here to log in!</a>
-
-    <script>
-        document.getElementById('sendVerifEmail').addEventListener('click', function() {
-            let email = document.querySelector('input[name="email"]').value;
-            fetch('/send-verification-email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({email: email}),
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Network response was not ok.');
-            })
-            .then(data => {
-                alert(data.message);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('Error sending verification email.');
-            });
-        });
-    </script>
-
 </body>
 </html>
