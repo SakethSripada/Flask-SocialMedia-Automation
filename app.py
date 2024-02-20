@@ -320,16 +320,6 @@ def sched_item(delay, function, *args):  # takes delay for when the action shoul
     threading.Thread(target=exec_task).start()  # new thread created so main program can continue running
 
 
-# function for posting
-def exec_post(username, password, file_path, caption):  # necessary parameters for a post
-    try:  # logging in to user account and performing action
-        client = ig_login(username, password)
-        client.photo_upload(file_path, caption)
-    except EnvironmentError:
-        print("Error. Image did not post")
-        logging.error("Image post failed.")
-
-
 # function for liking
 def exec_like(username, password, media_id):  # necessary parameters for a like
     try:
@@ -362,16 +352,32 @@ def download_image(image_url, file_name):
         raise Exception(f"Failed to download image. Status code: {response.status_code}")
 
 
-# route for posting an image
+# function for posting
+def exec_post(username, password, file_path, caption):  # necessary parameters for a post
+    try:  # logging in to user account and performing action
+        client = ig_login(username, password)
+        client.photo_upload(file_path, caption)
+    except EnvironmentError:
+        print("Error. Image did not post")
+        logging.error("Image post failed.")
+
+
+instagram_scheduler = BackgroundScheduler()
+instagram_scheduler.start()
+
+
 @app.route("/post", methods=["POST"])
 def post_image():
-    csrf.protect()  # enabling csrf protection explicitly b/c this is not a flask-wtf form
+    csrf.protect()
     username = request.form['username']
     password = request.form['password']
     caption = request.form['caption']
-    ai_prompt = request.form["ai_prompt"]
+    ai_prompt = request.form.get("ai_prompt")
     scheduled_time = request.form.get("schedule_time")
-    # check if the user entered a prompt for the AI, and if so, generate the image accordingly and then download it
+    post_interval_hours = float(request.form.get("post_interval_hours") or 0)
+    post_interval_seconds = post_interval_hours * 3600
+    file_path = None
+
     if ai_prompt:
         try:
             response = ai_client.images.generate(
@@ -392,26 +398,32 @@ def post_image():
         except EnvironmentError:
             flash("Error generating AI Image. Please try again later.")
     else:
-        photo = request.files["photo"]  # if no AI prompt entered, then use the user uploaded photo as the image
+        photo = request.files["photo"]
         unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
         photo.save(file_path)
 
+    job_id = f'{username}_{uuid.uuid4()}'
+
     if scheduled_time:
-        scheduled_time = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        post_delay = (scheduled_time - datetime.now()).total_seconds()  # convert delay into seconds
-        if post_delay > 0:  # check if the user wants to schedule in the future
-            sched_item(post_delay, exec_post, username, password, file_path, caption)
-            timestamps = session.get("scheduled_posts_timestamps", [])
-            timestamps.append(datetime.utcnow())  # timestamps of when posts are made recorded for rate limiting
-            session["scheduled_posts_timestamps"] = timestamps
-            return "Successfully Scheduled."
+        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        delay = (scheduled_time_dt - datetime.now()).total_seconds()
+        if delay > 0:
+            instagram_scheduler.add_job(exec_post, 'date', run_date=scheduled_time_dt,
+                                        args=[username, password, file_path, caption], id=job_id)
+            flash('Post scheduled successfully!', 'success')
         else:
-            exec_post(username, password, file_path, caption)
-            return "Scheduled time has passed. Image Posting Now."
+            flash('Scheduled time has passed. Please choose a future time.', 'error')
+    elif post_interval_hours:
+        instagram_scheduler.add_job(exec_post, 'interval', seconds=post_interval_seconds,
+                                    args=[username, password, file_path, caption], id=job_id,
+                                    next_run_time=datetime.now())
+        flash(f'Post scheduled to be posted every {post_interval_hours} hours!', 'success')
     else:
         exec_post(username, password, file_path, caption)
-        return "Successfully Posted"
+        flash('Post published successfully!', 'success')
+
+    return redirect(url_for('home'))
 
 
 # route for liking posts, similar logic to posting route

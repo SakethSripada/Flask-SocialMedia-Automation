@@ -48,14 +48,17 @@
         Photo: <label>
         <input type="file" name="photo" accept="image/*" required>
     </label><br>
+        AI Image Prompt: <label>
+    <input type="text" name="ai_prompt">
+    </label><br>
         Caption: <label>
         <textarea name="caption" required></textarea>
     </label><br>
         Schedule Time: <label>
     <input type="datetime-local" name="schedule_time">
     </label><br>
-        AI Image Prompt: <label>
-    <input type="text" name="ai_prompt">
+        Post Every (hours): <label>
+    <input type="number" step="0.01" name="post_interval_hours">
     </label><br>
         <input type="submit" value="Post Image" class = "submit-btn">
     </form>
