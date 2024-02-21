@@ -762,6 +762,10 @@ def tweet_form():
     return render_template('tweet_form.html', logged_in='user_id' in session)
 
 
+email_scheduler = BackgroundScheduler()
+email_scheduler.start()
+
+
 @app.route("/send_email", methods=["POST"])
 def send_email():
     csrf.protect()
@@ -772,38 +776,61 @@ def send_email():
     recipients = [recipient.strip() for recipient in unsorted_recipients.split(",")]
     email_content = request.form["email_content"]
     ai_prompt = request.form.get("ai_prompt")
-    try:
-        if ai_prompt:
-            try:
-                response = ai_client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "user", "content": ai_prompt},
-                    ],
-                    presence_penalty=0.6,
-                    frequency_penalty=0.6,
-                    temperature=0.7
-                )
-                email_content = response.choices[0].message.content.strip()
-            except BadRequestError as e:
-                app.logger.error(f"OpenAI API error: {e}")
-                flash("An error occurred with the AI generation service. Please try again later.", "error")
-            except RateLimitError:
-                flash("OpenAI rate limit reached. Please try again later.")
-            except EnvironmentError:
-                flash("Error generating AI Email. Please try again later.")
-        else:
-            email_content = request.form.get("email_content")
-            logging.debug(f"Sending email to: {recipients}")
-    except Exception as e:
-        logging.error(f"An error occurred in /send_email: {e}", exc_info=True)
+    scheduled_time = request.form.get("schedule_time")
+    post_interval_hours = float(request.form.get("post_interval_hours") or 0)
+    post_interval_seconds = post_interval_hours * 3600
+    user_id = session.get('user_id')
 
+    if ai_prompt:
+        try:
+            response = ai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": ai_prompt},
+                ],
+                presence_penalty=0.6,
+                frequency_penalty=0.6,
+                temperature=0.7
+            )
+            email_content = response.choices[0].message.content.strip()
+        except BadRequestError as e:
+            app.logger.error(f"OpenAI API error: {e}")
+            flash("An error occurred with the AI generation service. Please try again later.", "error")
+        except RateLimitError:
+            flash("OpenAI rate limit reached. Please try again later.")
+        except EnvironmentError:
+            flash("Error generating AI Tweet. Please try again later.")
+
+    job_id = f'email_{user_id}_{uuid.uuid4()}'
+
+    if scheduled_time:
+        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        delay = (scheduled_time_dt - datetime.now()).total_seconds()
+        if delay > 0:
+            email_scheduler.add_job(exec_send_email, 'date', run_date=scheduled_time_dt,
+                                    args=[user_email, user_password, recipients, email_content], id=job_id)
+            flash('Email scheduled successfully!', 'success')
+        else:
+            flash('Scheduled time has passed. Please choose a future time.', 'error')
+    elif post_interval_hours > 0:
+        email_scheduler.add_job(exec_send_email, 'interval', seconds=post_interval_seconds,
+                                args=[user_email, user_password, recipients, email_content], id=job_id,
+                                next_run_time=datetime.now())
+        flash(f'Email scheduled to be sent every {post_interval_hours} hours!', 'success')
+    else:
+        exec_send_email(user_email, user_password, recipients, email_content)
+        flash('Email sent successfully!', 'success')
+
+    return redirect(url_for('email_form'))
+
+
+def exec_send_email(user_email, user_password, recipients, email_content):
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(user_email, user_password)
     for recipient in recipients:
         server.sendmail(user_email, recipient, email_content)
-    return redirect(url_for('email_form'))
+    server.quit()
 
 
 @app.route("/email_form")
