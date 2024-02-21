@@ -91,6 +91,7 @@
             <h1>Upcoming Posts</h1>
             <button onclick="showPosts('twitter')">Twitter Posts</button>
             <button onclick="showPosts('instagram')">Instagram Posts</button>
+            <button onclick="showPosts('email')">Emails</button>
 
             <div id="twitter" style="display:none;">
                 <table>
@@ -143,7 +144,31 @@
                     {% endfor %}
                 </table>
             </div>
-
+            <div id="email" style="display:none;">
+                <table>
+                    <tr>
+                        <th>Email Content</th>
+                        <th>Scheduled Time</th>
+                        <th>Interval (Seconds)</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for email in scheduled_emails %}
+                    <tr>
+                        <td>{{ email.email_content }}</td>
+                        <td>{{ email.scheduled_time }}</td>
+                        <td>{{ email.post_interval_seconds }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_scheduled_post', platform='email', job_id=email.job_id) }}" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="submit" value="Delete">
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No upcoming emails found.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
         </div>
     </div>
 
@@ -151,13 +176,19 @@
         function showPosts(platform) {
             let twitterDiv = document.getElementById('twitter');
             let instagramDiv = document.getElementById('instagram');
+            let emailDiv = document.getElementById('email');
+
+            twitterDiv.style.display = 'none';
+            instagramDiv.style.display = 'none';
+            emailDiv.style.display = 'none';
+
 
             if (platform === 'twitter') {
                 twitterDiv.style.display = 'block';
-                instagramDiv.style.display = 'none';
             } else if (platform === 'instagram') {
                 instagramDiv.style.display = 'block';
-                twitterDiv.style.display = 'none';
+            } else if (platform === 'email') {
+                emailDiv.style.display = 'block';
             }
         }
     </script>

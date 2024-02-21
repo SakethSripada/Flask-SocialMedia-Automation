@@ -93,6 +93,18 @@ class ScheduledIGPost(db.Model):
     user = db.relationship('User', backref=db.backref('scheduled_ig_posts', lazy=True))
 
 
+class ScheduledEmail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    email_content = db.Column(db.Text, nullable=False)
+    recipients = db.Column(db.Text, nullable=False)
+    scheduled_time = db.Column(db.DateTime, nullable=True)
+    post_interval_seconds = db.Column(db.Integer, nullable=True)
+    job_id = db.Column(db.String(255), unique=True, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('scheduled_emails', lazy=True))
+
+
 app.config['SCHEDULER_JOBSTORES'] = {
     'default': SQLAlchemyJobStore(url=app.config["SQLALCHEMY_DATABASE_URI"])
 }
@@ -719,8 +731,17 @@ def user_recurring_posts():
         )
     ).all()
 
+    user_scheduled_emails = ScheduledEmail.query.filter(
+        ScheduledEmail.user_id == user_id,
+        (
+            (ScheduledEmail.post_interval_seconds.isnot(None)) |
+            ((ScheduledEmail.scheduled_time.isnot(None)) & (ScheduledEmail.scheduled_time > current_time))
+        )
+    ).all()
+
     return render_template('user_recurring_posts.html', scheduled_ig_posts=user_scheduled_ig_posts,
-                           scheduled_tweets=user_scheduled_tweets, logged_in=True)
+                           scheduled_tweets=user_scheduled_tweets, scheduled_emails=user_scheduled_emails,
+                           logged_in=True)
 
 
 @app.route('/delete_scheduled_post/<platform>/<job_id>', methods=['POST'])
@@ -737,6 +758,9 @@ def delete_scheduled_post(platform, job_id):
     elif platform == 'twitter':
         view_scheduler = twitter_scheduler
         model = ScheduledTweet
+    elif platform == 'email':
+        view_scheduler = email_scheduler
+        model = ScheduledEmail
     else:
         flash('Invalid platform specified.', 'error')
         return redirect(url_for('user_recurring_posts'))
@@ -821,6 +845,16 @@ def send_email():
         exec_send_email(user_email, user_password, recipients, email_content)
         flash('Email sent successfully!', 'success')
 
+    new_scheduled_email = ScheduledEmail(
+        user_id=user_id,
+        email_content=email_content,
+        recipients=",".join(recipients),
+        scheduled_time=scheduled_time_dt if scheduled_time else None,
+        post_interval_seconds=post_interval_seconds if post_interval_hours else None,
+        job_id=job_id
+    )
+    db.session.add(new_scheduled_email)
+    db.session.commit()
     return redirect(url_for('email_form'))
 
 
