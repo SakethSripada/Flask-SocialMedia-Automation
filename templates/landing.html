@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
     <script async src="{{ url_for('static', filename='js/landing.js') }}"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
+      <link rel="icon" href="{{ url_for('static', filename='social-media.png') }}">
   <!-- <a href="https://www.flaticon.com/free-icons/marketing" title="marketing icons">Marketing icons created by Freepik - Flaticon</a> --->
     <title>Social Media Automation</title>
 </head>
@@ -31,10 +32,18 @@
     </nav>
     <header>
         <h1>Welcome to Social Media Automation</h1>
-        <p id = "blurb">Automate your social media presence with ease. Take advantage of AI generated Instagram Posts, Tweets, and Emails at regular intervals, you can focus on managing what's important to you.</p>
+        <p id = "blurb">The simplest solution to Social Media scheduling. Don't worry about paying for fancy features you don't need. Take advantage of AI generated Instagram Posts, Tweets, and Emails at regular intervals, and focus on managing what's important to you.</p>
         <button>Get Started</button>
     </header>
-     <div class="slideshow-container">
+     <div id="demo" class="carousel slide" data-bs-ride="carousel">
+
+  <div class="carousel-indicators">
+    <button type="button" data-bs-target="#demo" data-bs-slide-to="0" class="active"></button>
+    <button type="button" data-bs-target="#demo" data-bs-slide-to="1"></button>
+    <button type="button" data-bs-target="#demo" data-bs-slide-to="2"></button>
+  </div>
+
+ <div class="slideshow-container">
     <div class="mySlides fade">
         <img src="/static/landing1.jpg" alt = "social-media-pic1" style="width:100%">
     </div>
@@ -45,35 +54,9 @@
         <img src="/static/landing3.jpg" alt = "social-media-pic1" style="width:100%">
     </div>
     </div>
+
     <section id="features" class="features-section">
         <h2 id = "features-header">Features</h2>
-     <ul>
-         <li>
-                <h3>Instagram</h3>
-                <p>AI generated posts for your Instagram account. Schedule posts at regular intervals to keep your followers engaged.</p>
-         </li>
-         <li>
-                <h3>Twitter</h3>
-                <p>AI generated tweets for your Twitter account. Schedule tweets at regular intervals to keep your followers engaged.</p>
-         </li>
-         <li>
-                <h3>Emails</h3>
-                <p>AI generated emails for your email marketing campaigns. Schedule emails at regular intervals to keep your subscribers engaged.</p>
-         </li>
-         <li>
-                <h3>Dynamic Generation</h3>
-                <p>Worrying about AI generated content being redundant? Don't. We ensure that the content generated is new and interesting.</p>
-         </li>
-         <li>
-                <h3>Integration</h3>
-                <p>Want to make accounts to post live news every day, without lifting a finger? Check out our guide on integrating with third party services.</p>
-                <button id = "Learn More">Learn More</button>
-         </li>
-         <li>
-                <h3>Analytics</h3>
-                <p>Track the performance of your social media accounts. Get insights into the engagement and reach of your posts.</p>
-         </li>
-     </ul>
     </section>
 
     <section id="testimonials">
@@ -81,7 +64,97 @@
     </section>
 
     <section id="pricing">
-        <h2>Pricing Plans</h2>
+        <h2>Pricing</h2>
+        <div class="container-fluid" style="background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);">
+    <div class="container p-5">
+      <div class="row">
+        <div class="col-lg-4 col-md-12 mb-4">
+          <div class="card h-100 shadow-lg">
+            <div class="card-body">
+              <div class="text-center p-3">
+                <h5 class="card-title">Free</h5>
+                <small>Simple Scheduling. Free.</small>
+                <br><br>
+                <span class="h2">$0</span>/month
+                <br><br>
+              </div>
+              <p class="card-text">Unlimited scheduling across E-Mail, Twitter, and Instagram. No account needed.</p>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Unlimited Email Scheduling </li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Unlimited Twitter Scheduling</li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Unlimited Instagram Scheduling </li>
+            </ul>
+            <div class="card-body text-center">
+              <button class="btn btn-outline-primary btn-lg" style="border-radius:30px">Select</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-12 mb-4">
+          <div class="card h-100 shadow-lg">
+            <div class="card-body">
+              <div class="text-center p-3">
+                <h5 class="card-title">Standard</h5>
+                <small>Use AI to power your posts</small>
+                <br><br>
+                <span class="h2">$5</span>/month
+                <br><br>
+              </div>
+              <p class="card-text">Enjoy unlimited post, tweet, and email scheduling, but with 100 AI generated Tweets, 100 AI generated Emails, and 50 AI generated Instagram image posts monthly, automatically posted for you.</p>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Everything in Free tier</li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> AI Generated Tweets, Emails and Instagram posts</li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Use unlimited social media accounts</li>
+            </ul>
+            <div class="card-body text-center">
+              <button class="btn btn-outline-primary btn-lg" style="border-radius:30px">Select</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-12 mb-4">
+          <div class="card h-100 shadow-lg">
+            <div class="card-body">
+              <div class="text-center p-3">
+                <h5 class="card-title">Premium</h5>
+                <small>Combine the power of AI with third party integrations</small>
+                <br><br>
+                <span class="h2">$10</span>/month
+                <br><br>
+              </div>
+              <p class="card-text">Enjoy unlimited scheduling, along with 200 AI generated tweets, 200 AI generated emails, and 100 AI generated Instagram Image posts, along with integration with third party APIs.</p>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Everything in Standard tier  </li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Incorporate third party data into your AI posts</li>
+              <li class="list-group-item"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg> Create customized AI post bots</li>
+            </ul>
+            <div class="card-body text-center">
+              <button class="btn btn-outline-primary btn-lg" style="border-radius:30px">Select</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+        </div>
     </section>
 
     <section id="faq">
@@ -91,5 +164,6 @@
     <footer>
         <p>Contact Us | Terms of Service | Privacy Policy</p>
     </footer>
+     </div>
 </body>
 </html>
