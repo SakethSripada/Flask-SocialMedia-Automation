@@ -29,7 +29,8 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    transform: scale(1.05);
+    transition: transform 0.2s ease-in-out;
 }
 
 #features {
@@ -138,3 +139,4 @@ img{
 .features-section{
     margin-top: 40px;
 }
+

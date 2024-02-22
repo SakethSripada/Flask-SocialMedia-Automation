@@ -143,5 +143,10 @@ input[type="submit"]:hover {
     background-color: #45a049;
 }
 
-
+footer {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 20px 10px;
+}
 
