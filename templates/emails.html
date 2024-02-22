@@ -40,10 +40,10 @@
     <h2>Send an Email</h2>
     <form action="/send_email" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        GMail Username: <label>
+        Gmail Email Address: <label>
         <textarea name="user_email"></textarea>
     </label><br>
-        GMail App Password: <label>
+        Gmail App Password: <label>
         <textarea name="user_password"></textarea>
     </label><br>
         Recipients (Separate by Comma): <label>

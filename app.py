@@ -10,12 +10,13 @@ from secret import API_KEY, SECRET_KEY, MAIL_DEFAULT_SENDER, MAIL_PASSWORD, MAIL
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask_migrate import Migrate
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask_wtf.csrf import CSRFProtect
 from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
+from news_utils import get_top_headlines, get_first_title
 import smtplib
 import secret
 import base64
@@ -653,6 +654,9 @@ def post_tweet():
     access_token = session.get('access_token')
     post_interval_seconds = post_interval_hours * 3600
     user_id = session.get('user_id')
+    news_checkbox_checked = 'news_checkbox' in request.form
+    current_date = date.today()
+    date_string = current_date.strftime("%Y-%m-%d")
 
     if not access_token or not user_id:
         flash('No access token found or user not logged in, please log in again.', 'error')
@@ -662,6 +666,13 @@ def post_tweet():
         tweet_content = generate_tweet_content(ai_prompt)
         if not tweet_content:
             return redirect(url_for('tweet_form'))
+    elif news_checkbox_checked:
+        headlines = get_top_headlines(country="us")
+        first_title = get_first_title(headlines)
+        ai_prompt_news = (f"Generate a good news headline based on the following news title. Do not wrap it "
+                          f"in quotes: {first_title}")
+        ai_news_tweet = generate_tweet_content(ai_prompt_news)
+        tweet_content = f" Top News for {date_string}: {ai_news_tweet if ai_news_tweet else first_title}"
     else:
         tweet_content = request.form.get('tweet_content')
 
