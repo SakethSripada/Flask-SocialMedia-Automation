@@ -1,5 +1,6 @@
 from newsapi import NewsApiClient
 from secret import NEWS_API_KEY
+import random
 
 
 def get_top_headlines(country='us'):
@@ -12,9 +13,9 @@ def get_top_headlines(country='us'):
         return None
 
 
-def get_first_title(headlines):
+def get_random_title(headlines):
     if headlines and 'articles' in headlines and headlines['articles']:
-        first_title = headlines['articles'][0]['title']
-        return first_title
+        random_article = random.choice(headlines['articles'])
+        return random_article['title']
     else:
         return "No headlines found."

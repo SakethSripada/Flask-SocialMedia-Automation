@@ -16,7 +16,7 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
-from news_utils import get_top_headlines, get_first_title
+from news_utils import get_top_headlines, get_random_title
 import smtplib
 import secret
 import base64
@@ -668,7 +668,7 @@ def post_tweet():
             return redirect(url_for('tweet_form'))
     elif news_checkbox_checked:
         headlines = get_top_headlines(country="us")
-        first_title = get_first_title(headlines)
+        first_title = get_random_title(headlines)
         ai_prompt_news = (f"Generate a good news headline based on the following news title. Do not wrap it "
                           f"in quotes: {first_title}")
         ai_news_tweet = generate_tweet_content(ai_prompt_news)
