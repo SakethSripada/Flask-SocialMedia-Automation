@@ -6,7 +6,6 @@ body {
 header {
     text-align: center;
     padding: 50px 10px;
-    background: #f0f0f0;
 }
 
 header h1 {
@@ -33,6 +32,9 @@ button:hover {
     transition: transform 0.2s ease-in-out;
 }
 
+#header-text {
+    font-size: 40px;
+}
 #features {
     display: flex;
     flex-wrap: wrap;
@@ -143,4 +145,17 @@ img{
 a{
     color: white;
     text-decoration: none;
+}
+
+.round_corners{
+    border-radius: 20px;
+}
+
+.round_corners:hover{
+    transform: scale(1.05);
+    transition: transform 0.7s ease-in-out;
+}
+
+#get-started-btn{
+    margin-top: 20px;
 }

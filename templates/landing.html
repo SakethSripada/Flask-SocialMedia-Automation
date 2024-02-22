@@ -31,9 +31,8 @@
         </div>
     </nav>
     <header>
-        <h1>Welcome to Social Media Automation</h1>
-        <p id = "blurb">The simplest solution to Social Media scheduling. Don't worry about paying for fancy features you don't need. Take advantage of AI generated Instagram Posts, Tweets, and Emails at regular intervals, and focus on managing what's important to you.</p>
-        <button><a href = {{ url_for("instagram_form") }}>Get Started</a></button>
+        <h1 id = "header-text">Say hello to the simplest solution to social media</h1>
+        <button id = "get-started-btn"><a href = {{ url_for("instagram_form") }}>Get started for free. No sign up required</a></button>
     </header>
 
  <div class="slideshow-container">
@@ -49,11 +48,133 @@
     </div>
 
     <section id="features" class="features-section">
-        <h2 id = "features-header">Features</h2>
-    </section>
+  <div class="container px-4 py-5" id="custom-cards">
+    <h2 class="pb-2 border-bottom">Highlights</h2>
 
-    <section id="testimonials">
-        <h2>What Our Users Say</h2>
+    <div class="row row-cols-1 row-cols-lg-3 align-items-stretch g-4 py-5">
+      <div class="col">
+        <div class="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg" style="background-image: url('/static/features1.jpg');">
+          <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1">
+            <h2 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Set daily AI generated posts</h2>
+            <ul class="d-flex list-unstyled mt-auto">
+              <li class="me-auto">
+              </li>
+              <li class="d-flex align-items-center me-3">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>Earth</small>
+              </li>
+              <li class="d-flex align-items-center">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>3d</small>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg" style="background-image: url('/static/features2.jpg');">
+          <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1">
+            <h2 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Get and post data from your favorite sites</h2>
+            <ul class="d-flex list-unstyled mt-auto">
+              <li class="me-auto">
+              </li>
+              <li class="d-flex align-items-center me-3">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>Pakistan</small>
+              </li>
+              <li class="d-flex align-items-center">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>4d</small>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg" style="background-image: url('/static/features1.jpg');">
+          <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1">
+            <h2 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Create custom auto-post schedules</h2>
+            <ul class="d-flex list-unstyled mt-auto">
+              <li class="me-auto">
+              </li>
+              <li class="d-flex align-items-center me-3">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>California</small>
+              </li>
+              <li class="d-flex align-items-center">
+                <svg class="bi me-2" width="1em" height="1em"><use> ""></use></svg>
+                <small>5d</small>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container px-4 py-5" id="icon-grid">
+    <h2 class="pb-2 border-bottom">Features</h2>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Instagram</h4>
+          <p>Upload images, and schedule them for later, or auto post them at regular intervals.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Twitter</h4>
+          <p>Write tweets and schedule them for later, or auto-post them at regular intervals.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Emails</h4>
+          <p>Create emails and send them at regular intervals to your mailing list.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">AI Generated Images</h4>
+          <p>Use AI Image Generation to be able to schedule and post AI generated images, with only a prompt.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">AI Tweet Generation</h4>
+          <p>Use the Tweet and Email generation features to generate text content and automatically post it.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Data based Posts</h4>
+          <p>Upload URLs that contain data you want to post about. AI generated posts can be made based on the data.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Included AI Posts</h4>
+          <p>Take advantage of built-in AI Post-Bots such as the NewsPoster that creates AI generated posts based on the current news.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <svg class="bi text-muted flex-shrink-0 me-3" width="1.75em" height="1.75em"><use> ""></use></svg>
+        <div>
+          <h4 class="fw-bold mb-0">Manage</h4>
+          <p>Create and manage multiple posting schedules across multiple accounts.</p>
+        </div>
+      </div>
+    </div>
+  </div>
     </section>
 
     <section id="pricing">
@@ -62,7 +183,7 @@
     <div class="container p-5">
       <div class="row">
         <div class="col-lg-4 col-md-12 mb-4">
-          <div class="card h-100 shadow-lg">
+          <div class="card h-100 shadow-lg round_corners">
             <div class="card-body">
               <div class="text-center p-3">
                 <h5 class="card-title">Free</h5>
@@ -90,7 +211,7 @@
           </div>
         </div>
         <div class="col-lg-4 col-md-12 mb-4">
-          <div class="card h-100 shadow-lg">
+          <div class="card h-100 shadow-lg round_corners">
             <div class="card-body">
               <div class="text-center p-3">
                 <h5 class="card-title">Standard</h5>
@@ -118,7 +239,7 @@
           </div>
         </div>
         <div class="col-lg-4 col-md-12 mb-4">
-          <div class="card h-100 shadow-lg">
+          <div class="card h-100 shadow-lg round_corners">
             <div class="card-body">
               <div class="text-center p-3">
                 <h5 class="card-title">Premium</h5>
