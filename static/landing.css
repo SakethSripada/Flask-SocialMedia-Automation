@@ -147,11 +147,12 @@ a{
 
 .round_corners{
     border-radius: 20px;
+    transition: transform 0.3s ease-in-out;
 }
 
 .round_corners:hover{
     transform: scale(1.05);
-    transition: transform 0.7s ease-in-out;
+    transition: transform 0.3s ease-in-out;
 }
 
 #get-started-btn{

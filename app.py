@@ -395,6 +395,36 @@ def exec_post(username, password, file_path, caption):  # necessary parameters f
         logging.error("Image post failed.")
 
 
+def generate_ai_content(ai_prompt):
+    if not ai_prompt:
+        return None
+
+    try:
+        generated_tweet = ai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": ai_prompt},
+            ],
+            presence_penalty=0.6,
+            frequency_penalty=0.6,
+            temperature=0.7
+        )
+        tweet_content = generated_tweet.choices[0].message.content.strip()
+
+        if len(tweet_content) > 250:
+            tweet_content = tweet_content[:250].rstrip()
+
+        return tweet_content
+    except BadRequestError as e:
+        app.logger.error(f"OpenAI API error: {e}")
+        flash("An error occurred with the AI generation service. Please try again later.", "error")
+    except RateLimitError:
+        flash("OpenAI rate limit reached. Please try again later.")
+    except EnvironmentError:
+        flash("Error generating AI Tweet. Please try again later.")
+    return None
+
+
 instagram_scheduler = BackgroundScheduler()
 instagram_scheduler.start()
 
@@ -409,11 +439,17 @@ def post_image():
     scheduled_time = request.form.get("schedule_time")
     post_interval_hours = float(request.form.get("post_interval_hours") or 0)
     post_interval_seconds = post_interval_hours * 3600
+    news_checkbox_checked = 'news_checkbox' in request.form
     user_id = session.get('user_id')
     file_path = None
 
     if ai_prompt:
         try:
+            if news_checkbox_checked:
+                headlines = get_top_headlines(country="us")
+                random_title = get_random_title(headlines)
+                ai_prompt = (f"Generate an image that describes what is being talked about in the "
+                             f"following news: {random_title}")
             response = ai_client.images.generate(
                 model="dall-e-2",
                 prompt=ai_prompt,
@@ -424,6 +460,11 @@ def post_image():
             image_url = response.data[0].url
             unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
             file_path = download_image(image_url, unique_filename)
+            if not caption:
+                caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be ONLY one "
+                                     f"sentence: {ai_prompt}")
+                caption = generate_ai_content(caption_ai_prompt)
+
         except BadRequestError as e:
             app.logger.error(f"OpenAI API error: {e}")
             flash("An error occurred with the image generation service. Please try again later.", "error")
@@ -468,7 +509,7 @@ def post_image():
     db.session.add(new_scheduled_ig)
     db.session.commit()
 
-    return redirect(url_for('home'))
+    return redirect(url_for('instagram_form'))
 
 
 # route for liking posts, similar logic to posting route
@@ -596,7 +637,7 @@ def twitter_callback():
 
 def exec_post_tweet(access_token, ai_prompt=None, tweet_content=None, is_ai_generated=False):
     if is_ai_generated and ai_prompt:
-        tweet_content = generate_tweet_content(ai_prompt)
+        tweet_content = generate_ai_content(ai_prompt)
         if tweet_content is None:
             app.logger.error("Failed to generate tweet content.")
             return
@@ -616,36 +657,6 @@ twitter_scheduler = BackgroundScheduler()
 twitter_scheduler.start()
 
 
-def generate_tweet_content(ai_prompt):
-    if not ai_prompt:
-        return None
-
-    try:
-        generated_tweet = ai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": ai_prompt},
-            ],
-            presence_penalty=0.6,
-            frequency_penalty=0.6,
-            temperature=0.7
-        )
-        tweet_content = generated_tweet.choices[0].message.content.strip()
-
-        if len(tweet_content) > 250:
-            tweet_content = tweet_content[:250].rstrip()
-
-        return tweet_content
-    except BadRequestError as e:
-        app.logger.error(f"OpenAI API error: {e}")
-        flash("An error occurred with the AI generation service. Please try again later.", "error")
-    except RateLimitError:
-        flash("OpenAI rate limit reached. Please try again later.")
-    except EnvironmentError:
-        flash("Error generating AI Tweet. Please try again later.")
-    return None
-
-
 @app.route('/post_tweet', methods=['POST'])
 def post_tweet():
     ai_prompt = request.form.get("ai_prompt").strip()
@@ -663,7 +674,7 @@ def post_tweet():
         return redirect(url_for('twitter_login'))
 
     if ai_prompt:
-        tweet_content = generate_tweet_content(ai_prompt)
+        tweet_content = generate_ai_content(ai_prompt)
         if not tweet_content:
             return redirect(url_for('tweet_form'))
     elif news_checkbox_checked:
@@ -671,7 +682,7 @@ def post_tweet():
         first_title = get_random_title(headlines)
         ai_prompt_news = (f"Generate a good news headline based on the following news title. Do not wrap it "
                           f"in quotes: {first_title}")
-        ai_news_tweet = generate_tweet_content(ai_prompt_news)
+        ai_news_tweet = generate_ai_content(ai_prompt_news)
         tweet_content = f" Top News for {date_string}: {ai_news_tweet if ai_news_tweet else first_title}"
     else:
         tweet_content = request.form.get('tweet_content')
@@ -745,8 +756,8 @@ def user_recurring_posts():
     user_scheduled_emails = ScheduledEmail.query.filter(
         ScheduledEmail.user_id == user_id,
         (
-            (ScheduledEmail.post_interval_seconds.isnot(None)) |
-            ((ScheduledEmail.scheduled_time.isnot(None)) & (ScheduledEmail.scheduled_time > current_time))
+                (ScheduledEmail.post_interval_seconds.isnot(None)) |
+                ((ScheduledEmail.scheduled_time.isnot(None)) & (ScheduledEmail.scheduled_time > current_time))
         )
     ).all()
 
