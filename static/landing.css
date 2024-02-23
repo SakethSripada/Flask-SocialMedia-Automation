@@ -6,7 +6,6 @@ body {
 header {
     text-align: center;
     padding: 50px 10px;
-    background: #f0f0f0;
 }
 
 header h1 {
@@ -32,6 +31,7 @@ button:hover {
     transform: scale(1.05);
     transition: transform 0.2s ease-in-out;
 }
+
 
 #features {
     display: flex;
@@ -143,4 +143,39 @@ img{
 a{
     color: white;
     text-decoration: none;
+}
+
+.round_corners{
+    border-radius: 20px;
+}
+
+.round_corners:hover{
+    transform: scale(1.05);
+    transition: transform 0.7s ease-in-out;
+}
+
+#get-started-btn{
+    margin-top: 20px;
+}
+
+#header_text_container{
+    text-align: center;
+}
+#header-text {
+    font-size: 40px;
+    border-right: 0.1em solid black;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    animation: typing 4s steps(60, end) forwards;
+}
+
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+        border-color: transparent;
+    }
 }
