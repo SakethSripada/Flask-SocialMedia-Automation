@@ -32,9 +32,7 @@ button:hover {
     transition: transform 0.2s ease-in-out;
 }
 
-#header-text {
-    font-size: 40px;
-}
+
 #features {
     display: flex;
     flex-wrap: wrap;
@@ -158,4 +156,26 @@ a{
 
 #get-started-btn{
     margin-top: 20px;
+}
+
+#header_text_container{
+    text-align: center;
+}
+#header-text {
+    font-size: 40px;
+    border-right: 0.1em solid black;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    animation: typing 4s steps(60, end) forwards;
+}
+
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+        border-color: transparent;
+    }
 }
