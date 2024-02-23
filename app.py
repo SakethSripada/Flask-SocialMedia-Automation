@@ -429,6 +429,15 @@ instagram_scheduler = BackgroundScheduler()
 instagram_scheduler.start()
 
 
+def is_ip_blocked(client, username, password):
+    ig_login(username, password)
+    try:
+        profile_info = client.account_info()
+        return False
+    except ConnectionRefusedError:
+        return True
+
+
 @app.route("/post", methods=["POST"])
 def post_image():
     csrf.protect()
@@ -441,37 +450,51 @@ def post_image():
     post_interval_seconds = post_interval_hours * 3600
     news_checkbox_checked = 'news_checkbox' in request.form
     user_id = session.get('user_id')
+    client = ig_login(username, password)
+    headlines = get_top_headlines(country="us")
+    random_title = get_random_title(headlines)
     file_path = None
 
-    if ai_prompt:
-        try:
-            if news_checkbox_checked:
-                headlines = get_top_headlines(country="us")
-                random_title = get_random_title(headlines)
-                ai_prompt = (f"Generate an image that describes what is being talked about in the "
-                             f"following news: {random_title}")
-            response = ai_client.images.generate(
-                model="dall-e-2",
-                prompt=ai_prompt,
-                size="1024x1024",
-                quality="standard",
-                n=1,
-            )
-            image_url = response.data[0].url
-            unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
-            file_path = download_image(image_url, unique_filename)
-            if not caption:
-                caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be ONLY one "
-                                     f"sentence: {ai_prompt}")
-                caption = generate_ai_content(caption_ai_prompt)
+    if news_checkbox_checked:
+        ai_prompt = (f"Generate an image that SHOWS what is being talked about in the "
+                     f"following news: {random_title}. Do not put ANY WORDS in the image, it should solely be a "
+                     f"pictorial representation of whatever topic was mentioned above. IT SHOULD ALSO BE 100% "
+                     f"REALISTIC AND AS REALISTIC AS POSSIBLE AND LOOK LIKE IT WAS TAKEN BY A HUMAN")
+        caption = generate_ai_content(f"Pretend you are a news reporter who is in charge of writing short but "
+                                      f"comprehensive captions for news headlines. Based on the following headline, "
+                                      f" {random_title}generate such a caption. It should include no labels of any "
+                                      f"sort, such as 'Headline' or 'Caption', and should SOLELY contain the content "
+                                      f"of the caption you generated with no additional text, quotation marks, "
+                                      f"or punctuations.")
 
-        except BadRequestError as e:
-            app.logger.error(f"OpenAI API error: {e}")
-            flash("An error occurred with the image generation service. Please try again later.", "error")
-        except RateLimitError:
-            flash("OpenAI rate limit reached. Please try again later.")
-        except EnvironmentError:
-            flash("Error generating AI Image. Please try again later.")
+    if ai_prompt:
+        if not is_ip_blocked(client, username, password):
+            try:
+                response = ai_client.images.generate(
+                    model="dall-e-2",
+                    prompt=ai_prompt,
+                    size="1024x1024",
+                    quality="standard",
+                    n=1,
+                )
+                image_url = response.data[0].url
+                unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
+                file_path = download_image(image_url, unique_filename)
+                if not caption and not news_checkbox_checked:
+                    caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be ONLY one "
+                                         f"sentence: {ai_prompt}")
+                    caption = generate_ai_content(caption_ai_prompt)
+
+            except BadRequestError as e:
+                app.logger.error(f"OpenAI API error: {e}")
+                flash("An error occurred with the image generation service. Please try again later.", "error")
+            except RateLimitError:
+                flash("OpenAI rate limit reached. Please try again later.")
+            except EnvironmentError:
+                flash("Error generating AI Image. Please try again later.")
+        elif is_ip_blocked(client, username, password):
+            flash("Your IP has been blocked from using the AI image generation service. "
+                  "Please try again later.", "error")
     else:
         photo = request.files["photo"]
         unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
