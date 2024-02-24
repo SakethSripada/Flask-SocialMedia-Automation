@@ -532,17 +532,16 @@ def post_image():
             flash('Post published successfully!', 'success')
     else:
         flash("An error occurred with the image generation or upload. Please try again.", "error")
-        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        new_scheduled_ig = ScheduledIGPost(
-            user_id=user_id,
-            ai_prompt=ai_prompt if ai_prompt else None,
-            caption=caption,
-            scheduled_time=scheduled_time_dt if scheduled_time else None,
-            post_interval_seconds=post_interval_seconds if post_interval_hours else None,
-            job_id=job_id
-        )
-        db.session.add(new_scheduled_ig)
-        db.session.commit()
+    new_scheduled_ig = ScheduledIGPost(
+        user_id=user_id,
+        ai_prompt=ai_prompt if ai_prompt else None,
+        caption=caption if caption else None,
+        scheduled_time=scheduled_time_dt if scheduled_time else None,
+        post_interval_seconds=post_interval_seconds if post_interval_hours else None,
+        job_id=job_id
+    )
+    db.session.add(new_scheduled_ig)
+    db.session.commit()
 
     return redirect(url_for('instagram_form'))
 

@@ -39,7 +39,7 @@
     <button id="view-schedule-btn" onclick="window.location.href='{{ url_for('user_recurring_posts') }}';">View Scheduled Posts</button>
 
     <h2>Post an Image</h2>
-    <form action="/post" method="post" enctype="multipart/form-data">
+    <form id = "instagram_form" action="/post" method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         Username: <label>
         <input type="text" name="username" required>
@@ -107,6 +107,13 @@
     </div>
     </div>
 
+<div id="loadingModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Processing...</h3>
+    <p>Please wait while your image is being posted. Do not exit the app, or you may waste your image tokens.</p>
+    <div class="loader"></div>
+  </div>
+</div>
 <footer>
         <p><a href="#"><span>Contact Us</span></a> | <a href="#"><span>Terms of Service</span></a> | <a href="#"><span>Privacy Policy</span></a></p>
     </footer>
