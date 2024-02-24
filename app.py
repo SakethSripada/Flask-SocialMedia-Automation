@@ -16,7 +16,7 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
-from news_utils import get_top_headlines, get_random_title, get_main_entities
+from news_utils import get_top_headlines, get_random_title, get_main_entities, download_image_to_draw, add_text_to_image
 import smtplib
 import secret
 import base64
@@ -454,6 +454,7 @@ def post_image():
     headlines = get_top_headlines(country="us")
     random_title = get_random_title(headlines)
     main_entity = get_main_entities(random_title)
+    file_path = "/static/landing1.jpg"
 
     if news_checkbox_checked:
         ai_prompt = (main_entity[0] if main_entity else "News") + " " + random_title
@@ -463,71 +464,85 @@ def post_image():
                                       f"sort, such as 'Headline' or 'Caption', and should SOLELY contain the content "
                                       f"of the caption you generated with no additional text, quotation marks, "
                                       f"or punctuations.")
+    try:
+        if ai_prompt:
+            if not is_ip_blocked(client, username, password):
+                try:
+                    response = ai_client.images.generate(
+                        model="dall-e-2",
+                        prompt=ai_prompt,
+                        size="1024x1024",
+                        quality="standard",
+                        n=1,
+                    )
+                    image_url = response.data[0].url
+                    temp_image_path = download_image(image_url, "to_draw_generated.png")
+                    unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
+                    if news_checkbox_checked:
+                        text_to_add = caption.upper()
+                        position = (50, 50)
+                        file_path = add_text_to_image(temp_image_path, text_to_add,
+                                                      position)
+                    elif not news_checkbox_checked:
+                        file_path = download_image(image_url, unique_filename)
+                    if not caption and not news_checkbox_checked:
+                        caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be "
+                                             f"ONLY one"
+                                             f"sentence: {ai_prompt}")
+                        caption = generate_ai_content(caption_ai_prompt)
 
-    if ai_prompt:
-        if not is_ip_blocked(client, username, password):
-            try:
-                response = ai_client.images.generate(
-                    model="dall-e-2",
-                    prompt=ai_prompt,
-                    size="1024x1024",
-                    quality="standard",
-                    n=1,
-                )
-                image_url = response.data[0].url
-                unique_filename = secure_filename(f"{uuid.uuid4()}_generated.png")
-                file_path = download_image(image_url, unique_filename)
-                if not caption and not news_checkbox_checked:
-                    caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be ONLY one "
-                                         f"sentence: {ai_prompt}")
-                    caption = generate_ai_content(caption_ai_prompt)
-
-            except BadRequestError as e:
-                app.logger.error(f"OpenAI API error: {e}")
-                flash("An error occurred with the image generation service. Please try again later.", "error")
-            except RateLimitError:
-                flash("OpenAI rate limit reached. Please try again later.")
-            except EnvironmentError:
-                flash("Error generating AI Image. Please try again later.")
-        elif is_ip_blocked(client, username, password):
-            flash("Your IP has been blocked from using the AI image generation service. "
-                  "Please try again later.", "error")
-    else:
-        photo = request.files["photo"]
-        unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
-        photo.save(file_path)
+                except BadRequestError as e:
+                    app.logger.error(f"OpenAI API error: {e}")
+                    flash("An error occurred with the image generation service. Please try again later.", "error")
+                except RateLimitError:
+                    flash("OpenAI rate limit reached. Please try again later.")
+                except EnvironmentError:
+                    flash("Error generating AI Image. Please try again later.")
+            elif is_ip_blocked(client, username, password):
+                flash("Your IP has been blocked from using the AI image generation service. "
+                      "Please try again later.", "error")
+        else:
+            photo = request.files["photo"]
+            unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+            photo.save(file_path)
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        flash("An error occurred with the image generation or upload. Please try again.", "error")
+        return redirect(url_for('instagram_form'))
 
     job_id = f'{username}_{uuid.uuid4()}'
-
-    if scheduled_time:
-        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
-        delay = (scheduled_time_dt - datetime.now()).total_seconds()
-        if delay > 0:
-            instagram_scheduler.add_job(exec_post, 'date', run_date=scheduled_time_dt,
-                                        args=[username, password, file_path, caption], id=job_id)
-            flash('Post scheduled successfully!', 'success')
+    if file_path:
+        if scheduled_time:
+            scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+            delay = (scheduled_time_dt - datetime.now()).total_seconds()
+            if delay > 0:
+                instagram_scheduler.add_job(exec_post, 'date', run_date=scheduled_time_dt,
+                                            args=[username, password, file_path, caption], id=job_id)
+                flash('Post scheduled successfully!', 'success')
+            else:
+                flash('Scheduled time has passed. Please choose a future time.', 'error')
+        elif post_interval_hours:
+            instagram_scheduler.add_job(exec_post, 'interval', seconds=post_interval_seconds,
+                                        args=[username, password, file_path, caption], id=job_id,
+                                        next_run_time=datetime.now())
+            flash(f'Post scheduled to be posted every {post_interval_hours} hours!', 'success')
         else:
-            flash('Scheduled time has passed. Please choose a future time.', 'error')
-    elif post_interval_hours:
-        instagram_scheduler.add_job(exec_post, 'interval', seconds=post_interval_seconds,
-                                    args=[username, password, file_path, caption], id=job_id,
-                                    next_run_time=datetime.now())
-        flash(f'Post scheduled to be posted every {post_interval_hours} hours!', 'success')
+            exec_post(username, password, file_path, caption)
+            flash('Post published successfully!', 'success')
     else:
-        exec_post(username, password, file_path, caption)
-        flash('Post published successfully!', 'success')
-
-    new_scheduled_ig = ScheduledIGPost(
-        user_id=user_id,
-        ai_prompt=ai_prompt if ai_prompt else None,
-        caption=caption,
-        scheduled_time=scheduled_time_dt if scheduled_time else None,
-        post_interval_seconds=post_interval_seconds if post_interval_hours else None,
-        job_id=job_id
-    )
-    db.session.add(new_scheduled_ig)
-    db.session.commit()
+        flash("An error occurred with the image generation or upload. Please try again.", "error")
+        scheduled_time_dt = datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M")
+        new_scheduled_ig = ScheduledIGPost(
+            user_id=user_id,
+            ai_prompt=ai_prompt if ai_prompt else None,
+            caption=caption,
+            scheduled_time=scheduled_time_dt if scheduled_time else None,
+            post_interval_seconds=post_interval_seconds if post_interval_hours else None,
+            job_id=job_id
+        )
+        db.session.add(new_scheduled_ig)
+        db.session.commit()
 
     return redirect(url_for('instagram_form'))
 
