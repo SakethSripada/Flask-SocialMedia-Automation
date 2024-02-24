@@ -16,7 +16,7 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
-from news_utils import get_top_headlines, get_random_title
+from news_utils import get_top_headlines, get_random_title, get_main_entities
 import smtplib
 import secret
 import base64
@@ -453,13 +453,10 @@ def post_image():
     client = ig_login(username, password)
     headlines = get_top_headlines(country="us")
     random_title = get_random_title(headlines)
-    file_path = None
+    main_entity = get_main_entities(random_title)
 
     if news_checkbox_checked:
-        ai_prompt = (f"Generate an image that SHOWS what is being talked about in the "
-                     f"following news: {random_title}. Do not put ANY WORDS in the image, it should solely be a "
-                     f"pictorial representation of whatever topic was mentioned above. IT SHOULD ALSO BE 100% "
-                     f"REALISTIC AND AS REALISTIC AS POSSIBLE AND LOOK LIKE IT WAS TAKEN BY A HUMAN")
+        ai_prompt = (main_entity[0] if main_entity else "News") + " " + random_title
         caption = generate_ai_content(f"Pretend you are a news reporter who is in charge of writing short but "
                                       f"comprehensive captions for news headlines. Based on the following headline, "
                                       f" {random_title}generate such a caption. It should include no labels of any "

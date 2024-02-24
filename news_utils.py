@@ -1,5 +1,7 @@
 from newsapi import NewsApiClient
 from secret import NEWS_API_KEY
+import spacy
+from collections import Counter
 import random
 
 
@@ -19,3 +21,12 @@ def get_random_title(headlines):
         return random_article['title']
     else:
         return "No headlines found."
+
+
+def get_main_entities(headline):
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(headline)
+    words = [token.text.lower() for token in doc if token.pos_ in ["NOUN", "PROPN", "ORG", "GPE"]]
+    word_freq = Counter(words)
+    most_common_words = word_freq.most_common(2)
+    return [word for word, freq in most_common_words]
