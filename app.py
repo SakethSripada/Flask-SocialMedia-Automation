@@ -485,7 +485,7 @@ def post_image():
                                                       position)
                     elif not news_checkbox_checked:
                         file_path = download_image(image_url, unique_filename)
-                    if not caption and not news_checkbox_checked:
+                    if not caption and not news_checkbox_checked and ai_prompt:
                         caption_ai_prompt = (f"Generate a short Instagram caption for the following. It should be "
                                              f"ONLY one"
                                              f"sentence: {ai_prompt}")
