@@ -47,7 +47,7 @@ def download_image_to_draw(image_url):
         raise Exception(f"Failed to download image. Status code: {response.status_code}")
 
 
-def add_text_to_image(image_path, text, position, font_size=100, font_color=(255, 255, 255)):
+def add_text_to_image(image_path, text, position, font_size=65, font_color=(255, 255, 255)):
     image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
     image_width, image_height = image.size
@@ -64,8 +64,7 @@ def add_text_to_image(image_path, text, position, font_size=100, font_color=(255
 
     text_height = sum([font.getsize(line)[1] for line in lines])
 
-    y_text = position[1] if position[1] + text_height <= image_height else image_height - text_height
-
+    y_text = image_height - text_height - position[1]
     for line in lines:
         line_width, line_height = font.getsize(line)
         x_text = (image_width - line_width) / 2
