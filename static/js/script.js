@@ -1,3 +1,6 @@
-document.getElementById("instagram_form").onsubmit = function() {
-  document.getElementById("loadingModal").style.display = "block";
-};
+$(document).ready(function() {
+    $('#instagram_form').on('submit', function(event) {
+        event.preventDefault();
+        $('#loadingModal').modal('show');
+    });
+});

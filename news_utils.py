@@ -47,7 +47,7 @@ def download_image_to_draw(image_url):
         raise Exception(f"Failed to download image. Status code: {response.status_code}")
 
 
-def add_text_to_image(image_path, text, position, font_size=50, font_color=(255, 255, 255)):
+def add_text_to_image(image_path, text, position, font_size=100, font_color=(255, 255, 255)):
     image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
     image_width, image_height = image.size
