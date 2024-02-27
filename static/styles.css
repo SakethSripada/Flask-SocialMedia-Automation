@@ -150,29 +150,6 @@ footer {
     padding: 20px 10px;
 }
 /* modal window tht show the loading*/
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
-
-}
-
-.modal-content {
-  position: relative;
-  background-color: #fefefe;
-  margin: 15% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 50%;
-    border-radius: 20px;
-}
 
 .loader {
   border: 6px solid #f3f3f3;
@@ -181,11 +158,9 @@ footer {
   width: 50px;
   height: 50px;
   animation: spin 2s linear infinite;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: 350px;
-  margin-top: -25px;
+    position: relative;
+  margin: 0 auto;
+  display: block;
 }
 
 @keyframes spin {
