@@ -103,15 +103,12 @@
                         <th>Action</th>
                     </tr>
                     {% for tweet in scheduled_tweets %}
-                    <tr>
+                    <tr id="twitter-row-{{ tweet.job_id }}">
                         <td>{{ tweet.tweet_content }}</td>
                         <td>{{ tweet.scheduled_time }}</td>
                         <td>{{ tweet.post_interval_seconds }}</td>
                         <td>
-                            <form action="{{ url_for('delete_scheduled_post', platform='twitter', job_id=tweet.job_id) }}" method="post">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="submit" value="Delete">
-                            </form>
+                            <button onclick="deletePost('twitter', '{{ tweet.job_id }}')">Delete</button>
                         </td>
                     </tr>
                     {% else %}
@@ -129,15 +126,12 @@
                         <th>Action</th>
                     </tr>
                     {% for post in scheduled_ig_posts %}
-                    <tr>
+                    <tr id="instagram-row-{{ post.job_id }}">
                         <td>{{ post.caption }}</td>
                         <td>{{ post.scheduled_time }}</td>
                         <td>{{ post.post_interval_seconds }}</td>
                         <td>
-                            <form action="{{ url_for('delete_scheduled_post', platform='ig', job_id=post.job_id) }}" method="post">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="submit" value="Delete">
-                            </form>
+                            <button onclick="deletePost('ig', '{{ post.job_id }}')">Delete</button>
                         </td>
                     </tr>
                     {% else %}
@@ -145,6 +139,7 @@
                     {% endfor %}
                 </table>
             </div>
+
             <div id="email" style="display:none;">
                 <table>
                     <tr>
@@ -154,15 +149,12 @@
                         <th>Action</th>
                     </tr>
                     {% for email in scheduled_emails %}
-                    <tr>
+                    <tr id="email-row-{{ email.job_id }}">
                         <td>{{ email.email_content }}</td>
                         <td>{{ email.scheduled_time }}</td>
                         <td>{{ email.post_interval_seconds }}</td>
                         <td>
-                            <form action="{{ url_for('delete_scheduled_post', platform='email', job_id=email.job_id) }}" method="post">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="submit" value="Delete">
-                            </form>
+                            <button onclick="deletePost('email', '{{ email.job_id }}')">Delete</button>
                         </td>
                     </tr>
                     {% else %}
@@ -191,6 +183,27 @@
             } else if (platform === 'email') {
                 emailDiv.style.display = 'block';
             }
+        }
+
+        function deletePost(platform, jobId) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch(`/delete_scheduled_post/${platform}/${jobId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ jobId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`${platform}-row-${jobId}`).remove();
+                } else {
+                    alert('An error occurred while deleting the post.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 

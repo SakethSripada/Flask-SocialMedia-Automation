@@ -831,14 +831,14 @@ def delete_scheduled_post(platform, job_id):
     db.session.commit()
 
     flash(f'Scheduled post on {platform} deleted successfully!', 'success')
-    return redirect(url_for('user_recurring_posts'))
+    return jsonify(success=True)
 
 
 @app.route('/tweet_form')
 def tweet_form():
     access_token = session.get('access_token')
     if not access_token:
-        return redirect(url_for("/twitter/login"))
+        return redirect(url_for("twitter_login"))
     return render_template('tweet_form.html', logged_in='user_id' in session)
 
 
