@@ -126,7 +126,7 @@
                         <th>Action</th>
                     </tr>
                     {% for post in scheduled_ig_posts %}
-                    <tr id="instagram-row-{{ post.job_id }}">
+                    <tr id="ig-row-{{ post.job_id }}">
                         <td>{{ post.caption }}</td>
                         <td>{{ post.scheduled_time }}</td>
                         <td>{{ post.post_interval_seconds }}</td>

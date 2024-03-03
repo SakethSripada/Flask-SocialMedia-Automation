@@ -458,6 +458,7 @@ def post_image():
 
     if news_checkbox_checked:
         ai_prompt = (main_entity[0] if main_entity else "News") + " " + random_title
+        logging.info(f"AI Prompt: {ai_prompt}")
         caption = generate_ai_content(f"Pretend you are a news reporter who is in charge of writing short but "
                                       f"comprehensive captions for news headlines. Based on the following headline, "
                                       f" {random_title}generate such a caption. It should include no labels of any "
