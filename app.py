@@ -452,6 +452,7 @@ def post_image():
     username = request.form['username']
     password = request.form['password']
     caption = request.form['caption']
+    caption_on_image = request.form['caption_on_image']
     ai_prompt = request.form.get("ai_prompt")
     scheduled_time = request.form.get("schedule_time")
     post_interval_hours = float(request.form.get("post_interval_hours") or 0)
@@ -510,6 +511,11 @@ def post_image():
             elif is_ip_blocked(client, username, password):
                 flash("Your IP has been blocked from using the AI image generation service. "
                       "Please try again later.", "error")
+        elif caption_on_image:
+            photo = request.files["photo"]
+            text_to_add = caption_on_image.upper()
+            position = (50, 50)
+            file_path = add_text_to_image(photo, text_to_add, position)
         else:
             photo = request.files["photo"]
             unique_filename = secure_filename(f"{uuid.uuid4()}_{photo.filename}")

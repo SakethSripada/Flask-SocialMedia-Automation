@@ -3,7 +3,6 @@ from secret import NEWS_API_KEY
 from collections import Counter
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
-import requests
 import tempfile
 import spacy
 import random
@@ -36,18 +35,8 @@ def get_main_entities(headline):
     return [word for word, freq in most_common_words]
 
 
-def download_image_to_draw(image_url):
-    response = requests.get(image_url)
-    if response.status_code == 200:
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', mode='wb+')
-        temp_file.write(response.content)
-        temp_file.close()
-        return temp_file.name
-    else:
-        raise Exception(f"Failed to download image. Status code: {response.status_code}")
-
-
-def add_text_to_image(image_path, text, position, font_size=65, font_color=(0, 0, 0), border_color=(255, 255, 255), border_width=2):
+def add_text_to_image(image_path, text, position, font_size=65, font_color=(0, 0, 0), border_color=(255, 255, 255),
+                      border_width=2):
     image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
     image_width, image_height = image.size
@@ -69,8 +58,9 @@ def add_text_to_image(image_path, text, position, font_size=65, font_color=(0, 0
         line_width, line_height = font.getsize(line)
         x_text = (image_width - line_width) / 2
 
-        for dx, dy in [(i, j) for i in range(-border_width, border_width+1) for j in range(-border_width, border_width+1)]:
-            draw.text((x_text+dx, y_text+dy), line, font=font, fill=border_color)
+        for dx, dy in [(i, j) for i in range(-border_width, border_width + 1) for j in
+                       range(-border_width, border_width + 1)]:
+            draw.text((x_text + dx, y_text + dy), line, font=font, fill=border_color)
 
         draw.text((x_text, y_text), line, font=font, fill=font_color)
         y_text += line_height
