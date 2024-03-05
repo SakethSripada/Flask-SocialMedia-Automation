@@ -1,5 +1,7 @@
-from flask import Flask, request, jsonify, flash, render_template, redirect, url_for, session, abort
+from flask import Flask, request, jsonify, flash, render_template, redirect, url_for, session
+from flask_limiter.util import get_remote_address
 from instagrapi import Client
+from flask_limiter import Limiter
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -16,12 +18,11 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
-from news_utils import get_top_headlines, get_random_title, get_main_entities, download_image_to_draw, add_text_to_image
+from news_utils import get_top_headlines, get_random_title, get_main_entities, add_text_to_image
 import smtplib
 import secret
 import base64
 import hashlib
-import tweepy
 import click
 import requests
 import json
@@ -38,7 +39,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 # configurations
 app = Flask(__name__, template_folder="templates")
 csrf = CSRFProtect(app)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db?check_same_thread=False"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -52,6 +53,8 @@ app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
 mail = Mail(app)
 
 ai_client = OpenAI(api_key=API_KEY)
+
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 
 # DB model setup
@@ -184,6 +187,7 @@ def instagram_form():
 
 
 # route for sending of verification email
+@limiter.limit("50/hour")
 @app.route('/send-verification-email', methods=['POST'])
 def send_verification_email():
     data = json.loads(request.data)
@@ -209,6 +213,7 @@ def send_verification_email():
 
 
 # route for account registration
+@limiter.limit("50/hour")
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
@@ -238,6 +243,7 @@ class LoginForm(FlaskForm):
 
 
 # route for logging in
+@limiter.limit("50/hour")
 @app.route("/login", methods=["GET", "POST"])
 def login():
     # if user is already logged in, head to homepage
@@ -275,6 +281,7 @@ class ForgotPasswordForm(FlaskForm):
 
 
 # function to send the reset password email
+@limiter.limit("50/hour")
 def send_reset_email(user):
     # token generated based on user email, creates a unique token ONLY valid for resetting the password
     token = s.dumps(user.email, salt='reset-password')
@@ -438,6 +445,7 @@ def is_ip_blocked(client, username, password):
         return True
 
 
+@limiter.limit("50/hour")
 @app.route("/post", methods=["POST"])
 def post_image():
     csrf.protect()
@@ -548,6 +556,7 @@ def post_image():
 
 
 # route for liking posts, similar logic to posting route
+@limiter.limit("50/hour")
 @app.route("/like", methods=["POST"])
 def like_post():
     csrf.protect()
@@ -571,6 +580,7 @@ def like_post():
 
 
 # route for liking posts, similar logic to posting route
+@limiter.limit("50/hour")
 @app.route("/comment", methods=["POST"])
 def comment_ig():
     csrf.protect()
@@ -594,23 +604,6 @@ def comment_ig():
         return "Successfully Commented."
 
 
-# function to rate limit (max 50 scheduled posts per hour), based on the number of timestamps logged
-def rate_limit():
-    timestamps = session.get("scheduled_posts_timestamps", [])
-    prev_hour = datetime.utcnow() - timedelta(hours=1)
-    timestamps_prev_hour = [ts.replace(tzinfo=None) for ts in timestamps if ts.replace(tzinfo=None) > prev_hour]
-    session["scheduled_posts_timestamps"] = timestamps_prev_hour
-    return len(timestamps_prev_hour) >= 50
-
-
-# if interactions with instagram exceeds 50 in an hour, do not allow the action to be completed
-@app.before_request
-def check_rate_limit():
-    if request.endpoint in ["post_image", "like_post", "comment_ig"]:
-        if rate_limit():
-            abort(429, description="You have reached 50 scheduled posts in one hour. No more posts may be scheduled.")
-
-
 CALLBACK_URI = 'http://127.0.0.1:5000/auth/twitter/callback'
 
 
@@ -620,6 +613,7 @@ def pkce_transform(code_verifier):
     return code_challenge
 
 
+@limiter.limit("50/hour")
 @app.route('/twitter/login')
 def twitter_login():
     code_verifier = base64.urlsafe_b64encode(os.urandom(30)).decode('utf-8').replace('=', '')
@@ -692,6 +686,7 @@ twitter_scheduler = BackgroundScheduler()
 twitter_scheduler.start()
 
 
+@limiter.limit("50/hour")
 @app.route('/post_tweet', methods=['POST'])
 def post_tweet():
     ai_prompt = request.form.get("ai_prompt").strip()
@@ -847,6 +842,7 @@ email_scheduler = BackgroundScheduler()
 email_scheduler.start()
 
 
+@limiter.limit("50/hour")
 @app.route("/send_email", methods=["POST"])
 def send_email():
     csrf.protect()
