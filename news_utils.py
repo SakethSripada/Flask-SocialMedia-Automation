@@ -35,6 +35,12 @@ def get_main_entities(headline):
     return [word for word, freq in most_common_words]
 
 
+def get_first_n_words(text, number_of_words):
+    words = text.split()
+    first_n_words = words[:number_of_words]
+    return ' '.join(first_n_words)
+
+
 def add_text_to_image(image_path, text, position, font_size=65, font_color=(0, 0, 0), border_color=(255, 255, 255),
                       border_width=2):
     image = Image.open(image_path)

@@ -18,7 +18,8 @@ from openai import OpenAI, BadRequestError, RateLimitError
 from flask.cli import with_appcontext
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore, JobLookupError
-from news_utils import get_top_headlines, get_random_title, get_main_entities, add_text_to_image
+from news_utils import get_top_headlines, get_random_title, get_main_entities, add_text_to_image, get_first_n_words
+import get_text
 import smtplib
 import secret
 import base64
@@ -463,6 +464,8 @@ def post_image():
     headlines = get_top_headlines(country="us")
     random_title = get_random_title(headlines)
     main_entity = get_main_entities(random_title)
+    url_to_scrape = request.form['url_to_scrape']
+    url_content = get_text.get_text(url_to_scrape)
     file_path = "/static/landing1.jpg"
 
     if news_checkbox_checked:
@@ -474,6 +477,11 @@ def post_image():
                                       f"sort, such as 'Headline' or 'Caption', and should SOLELY contain the content "
                                       f"of the caption you generated with no additional text, quotation marks, "
                                       f"or punctuations.")
+    elif url_to_scrape:
+        ai_prompt = get_first_n_words(url_content, 100)
+        logging.info(f"AI Prompt: {ai_prompt}")
+        caption = generate_ai_content(f"Generate a short Instagram caption for the following. It should be ONLY one"
+                                      f"sentence: {ai_prompt}")
     try:
         if ai_prompt:
             if not is_ip_blocked(client, username, password):
