@@ -712,13 +712,22 @@ def post_tweet():
     news_checkbox_checked = 'news_checkbox' in request.form
     current_date = date.today()
     date_string = current_date.strftime("%Y-%m-%d")
+    url_to_scrape = request.form['url_to_scrape']
+    url_content = get_text.get_text(url_to_scrape)
 
     if not access_token or not user_id:
         flash('No access token found or user not logged in, please log in again.', 'error')
         return redirect(url_for('twitter_login'))
 
+    if url_to_scrape:
+        first_n_words = get_first_n_words(url_content, 100)
+        ai_prompt = (f"Generate a short tweet based on the following 100 word excerpt. Do NOT exceed 200 characters "
+                     f"when creating the short tweet. Do not wrap it in quotes either. {first_n_words}")
+        logging.info(f"AI Prompt: {ai_prompt}")
+
     if ai_prompt:
         tweet_content = generate_ai_content(ai_prompt)
+        logging.info(f"AI Generated Tweet: {tweet_content}")
         if not tweet_content:
             return redirect(url_for('tweet_form'))
     elif news_checkbox_checked:
