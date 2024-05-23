@@ -1,6 +1,82 @@
-# Flask Social Media Automation Application
-Built on Flask using SQLAlchemy for DB
+# AI Social Media Automation
 
-Functionality: 
-As of the last README update, 2/26/24, the user can upload images/enter text, log in with their Instagram or Twitter credentials, and then either post immediately or schedule times at which they would like these images or tweets to be posted. Then at these times, the application will automatically upload these photos/tweets to their Instagram/Twitter page. The app also connects to the OpenAI API, so the user may type in a prompt. Then DALL-E creates an image off of the user-entered prompt, or a tweet is generated using GPT 3.5 Turbo, and it is uploaded to the user's Instagram/Twitter page. The same functionality also exists with liking and commenting on posts on Instagram. The user can  also schedule recurring tweets/images that AI generates. For example, a user can set an interval of 12 hours, then enter a prompt for AI, say "News Headlines about Stock Market". Then, every 2 hours, GPT 3.5 Turbo/DALL-E 2 will generate a new tweet/image based on that prompt, and upload it to their Twitter/Instagram profile. The same functionality exists with sending Emails from the user's Gmail account. Working on implementing access to external live data for post creation, and there is currently a news posting option that allows the user to generate a Tweet/Post featuring top news headlines of the day, which are obtained from NewsAPI. Added text over the images posted to instagram using PIL, but need to improve its appearance.  There is also email verification and forgot password and CSRF protection is used. 
+## Features
 
+- **Automatic and regularly scheduled AI-generated social media posts**:
+  - Upload images/enter text and schedule posts for Instagram or Twitter.
+  - Use OpenAI API to generate images with DALL-E or tweets with GPT-3.5 Turbo.
+  - Schedule recurring posts or tweets with AI-generated content.
+  - Connect to Instagram and quickly post AI generated images based on your prompt.
+  - Send emails from your Gmail account with automated scheduling.
+  - Scheduled AI Generated news posting option using NewsAPI for daily top headlines.
+
+## Upcoming Features
+- Improved text overlay on images posted to Instagram.
+- Access to external live data for post creation.
+
+## Setup Instructions
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/SakethSripada/Flask-SocialMedia-Automation.git
+   ```
+   
+2. **Obtain API Keys and Credentials**:
+   - https://developer.twitter.com/en/portal/dashboard
+   - https://support.google.com/accounts/answer/185833?hl=en
+   - https://platform.openai.com/
+   - https://newsapi.org/
+3. **Create a 'secret.py' file and add values for the below variables**:
+   ```python
+    SECRET_KEY = 'your_secret_key' # Flask secret
+    MAIL_SERVER = "smtp.gmail.com" 
+    MAIL_PORT = 587
+    MAIL_USERNAME = "your_email_address"
+    MAIL_PASSWORD = "your_app_password" # Go to google account and set up App password
+    MAIL_DEFAULT_SENDER = ("NoReply SM Automation", "your_email_address")
+    API_KEY = "your_openai_api_key"
+    TWITTER_CONSUMER_KEY = "your_twitter_consumer_key"
+    TWITTER_CONSUMER_SECRET = "your_twitter_consumer_secret"
+    BEARER_KEY = "your_twitter_bearer_key"
+    ACCESS_TOKEN = "your_twitter_access_token"
+    ACCESS_TOKEN_SECRET = "your_twitter_access_token_secret"
+    OAUTH_CLIENT_ID = "your_oauth_client_id"
+    OAUTH_CLIENT_SECRET = "your_oauth_client_secret"
+    NEWS_API_KEY = "your_news_api_key"
+    ```
+4. **Install the required packages**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+5. **Set up the Database**:
+    ```bash
+   flask db init
+   flask db migrate -m "Initial migration."
+    flask db upgrade
+    ```
+6. **Run application**:
+    ```bash
+    flask run
+    ```
+
+## Additional Notes and Commands:
+- **Whenever you make changes to the database, run**:
+    ```bash
+    flask db migrate -m "migration message"
+    ```
+- **And then to update the database with the changes, run**:
+    ```bash
+    flask db upgrade
+    ```
+- **To Delete All Users, run**:
+    ```bash
+    flask delete-all-users
+    ```
+- **To Delete Specific Users, run**:
+    ```bash
+  flask delete-users user1,user2,user3
+    ```
+- **To List All Users, run**:
+    ```bash
+    flask list-users
+    ```
